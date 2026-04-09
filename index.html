@@ -51,7 +51,6 @@
     /* ── Views ── */
     .view { display: none; min-height: 100vh; padding-bottom: 110px;
       opacity: 0; transition: opacity .3s ease; }
-    #view-home { overflow-y: auto; max-height: 100vh; }
 
     #view-run { position: fixed; inset: 0; z-index: 300; background: var(--bg);
       display: none; flex-direction: column; align-items: center; padding: 56px 40px 40px;
@@ -1354,14 +1353,12 @@ const App = {
 
   // ── 3D card tilt ─────────────────────────────────────────
   initScrollEffects() {
-    const homeEl = $i('view-home');
-
     // 1. Scroll progress bar
-    homeEl.addEventListener('scroll', () => {
-      const max = homeEl.scrollHeight - homeEl.clientHeight;
-      const pct = max > 0 ? (homeEl.scrollTop / max) * 100 : 0;
+    window.addEventListener('scroll', () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = max > 0 ? (window.scrollY / max) * 100 : 0;
       $i('scroll-progress').style.width = pct + '%';
-    });
+    }, { passive: true });
 
     // 2. Scroll entrance + card tilt-in via IntersectionObserver
     const observer = new IntersectionObserver((entries) => {
@@ -1377,15 +1374,15 @@ const App = {
           observer.unobserve(el);
         }
       });
-    }, { root: homeEl, threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+    }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
 
     this._scrollObserver = observer;
 
     // 3. Momentum glow
     let lastY = 0, glowTimer = null;
-    homeEl.addEventListener('scroll', () => {
-      const speed = Math.abs(homeEl.scrollTop - lastY);
-      lastY = homeEl.scrollTop;
+    window.addEventListener('scroll', () => {
+      const speed = Math.abs(window.scrollY - lastY);
+      lastY = window.scrollY;
       if (speed > 8) {
         document.querySelectorAll('.routine-card').forEach(c => c.classList.add('momentum-glow'));
         clearTimeout(glowTimer);
