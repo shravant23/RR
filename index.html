@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ritual Runner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #EDF4FF;
+      --surface:     #FFFFFF;
+      --text:        #0B2545;
+      --muted:       #5E87AE;
+      --accent:      #1A72D8;
+      --accent-lt:   #D6ECFF;
+      --accent-dk:   #1059B0;
+      --accent2:     #00C2FF;
+      --gold:        #F5A623;
+      --gold-lt:     #FFF3D6;
+      --border:      #C2DCFA;
+      --danger-bg:   #FDECEA;
+      --danger:      #C0392B;
+      --sh-sm:       0 2px 12px rgba(26,114,216,.10);
+      --sh:          0 6px 24px rgba(26,114,216,.15);
+      --sh-lg:       0 16px 48px rgba(26,114,216,.22);
+      --r:           22px;
+      --r-sm:        14px;
+      --r-xs:        9px;
+    }
+
+    html, body { min-height: 100%; color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif; font-size: 16px; line-height: 1.55;
+      -webkit-font-smoothing: antialiased; }
+
+    body {
+      background:
+        radial-gradient(ellipse 140% 55% at 60% -5%, #B8DEFF 0%, transparent 65%),
+        radial-gradient(ellipse 80% 40% at -10% 80%, #D0EEFF 0%, transparent 60%),
+        #EDF4FF;
+      background-attachment: fixed;
+    }
+
+    #app { max-width: 480px; margin: 0 auto; position: relative; }
+
+    /* ── Views ── */
+    .view { display: none; min-height: 100vh; padding-bottom: 110px;
+      opacity: 0; transition: opacity .3s ease; }
+
+    #view-run { position: fixed; inset: 0; z-index: 300; background: var(--bg);
+      display: none; flex-direction: column; align-items: center; padding: 56px 32px 40px;
+      opacity: 0; transition: opacity .3s ease; }
+
+    /* ── Bottom nav ── */
+    #bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px; background: rgba(237,244,255,.92);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border); display: flex; z-index: 200;
+      padding: 8px 0 20px; }
+
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+      background: none; border: none; cursor: pointer; padding: 8px 10px; color: var(--muted);
+      font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: .2px;
+      transition: all .2s cubic-bezier(.34,1.4,.64,1); border-radius: 12px; }
+    .nav-item.active { color: var(--accent); background: rgba(26,114,216,.09); }
+    .nav-item:hover:not(.active) { color: var(--accent); transform: translateY(-1px); }
+    .nav-item svg { width: 22px; height: 22px; stroke-width: 1.8; }
+
+    /* ── Typography / page header ── */
+    .page-header { padding: 64px 22px 28px; }
+    .eyebrow { font-size: 12px; font-weight: 700; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+    .page-title { font-size: 34px; font-weight: 800; letter-spacing: -1px; line-height: 1.08;
+      background: linear-gradient(120deg, var(--text) 0%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; }
+    .page-sub { font-size: 15px; color: var(--muted); margin-top: 7px; font-weight: 400; }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; cursor: pointer; font-family: inherit; font-weight: 600;
+      border-radius: 50px; transition: all .2s cubic-bezier(.34,1.4,.64,1); }
+    .btn:active { transform: scale(.96); }
+
+    .btn-primary { background: linear-gradient(120deg, #2B8FFF 0%, #1A62D8 100%);
+      color: #fff; padding: 15px 26px; font-size: 15px;
+      box-shadow: 0 4px 18px rgba(26,114,216,.38); }
+    .btn-primary:hover { transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(26,114,216,.52); filter: brightness(1.08); }
+
+    .btn-secondary { background: var(--accent-lt); color: var(--accent);
+      padding: 15px 26px; font-size: 15px; border: 1.5px solid rgba(26,114,216,.15); }
+    .btn-secondary:hover { background: #C8E2FF; transform: translateY(-1px); }
+
+    .btn-ghost { background: rgba(194,220,250,.5); color: var(--muted);
+      padding: 15px 26px; font-size: 15px; border: 1.5px solid var(--border); }
+    .btn-ghost:hover { background: var(--accent-lt); color: var(--accent); }
+
+    .btn-full  { width: 100%; }
+    .btn-sm    { padding: 8px 16px; font-size: 13px; }
+
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; border-radius: var(--r-xs); border: none; cursor: pointer;
+      background: none; color: var(--muted); transition: all .18s; }
+    .icon-btn:hover { background: var(--border); color: var(--text); }
+    .icon-btn.danger:hover { background: var(--danger-bg); color: var(--danger); }
+
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; background: none;
+      border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500;
+      color: var(--muted); padding: 6px 0; transition: color .18s; }
+    .back-btn:hover { color: var(--text); }
+
+    /* ── Home cards ── */
+    .routine-card { background: var(--surface); border-radius: var(--r); padding: 24px;
+      margin: 0 18px 18px; box-shadow: var(--sh-sm);
+      transition: transform .25s cubic-bezier(.34,1.4,.64,1), box-shadow .25s ease;
+      border: 1px solid rgba(194,220,250,.6);
+      position: relative; overflow: hidden; }
+    .routine-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .routine-card:hover { transform: translateY(-4px) rotate(-0.4deg);
+      box-shadow: var(--sh), 0 0 0 1px rgba(26,114,216,.08); }
+
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .card-name { font-size: 20px; font-weight: 700; letter-spacing: -.4px; }
+    .card-meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+    .card-top-btns { display: flex; gap: 2px; flex-shrink: 0; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+    /* Chips cycle through cheerful pastel pairs */
+    .chip { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 20px; }
+    .chip:nth-child(3n+1) { background: #DBEEFF; color: #1A5FB0; }
+    .chip:nth-child(3n+2) { background: #D8F5E8; color: #1A6B42; }
+    .chip:nth-child(3n+3) { background: #EDE6FF; color: #5B21B6; }
+
+    /* ── Forms ── */
+    .fsec { padding: 0 22px; margin-bottom: 22px; }
+    .flabel { display: block; font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px; }
+    .finput { width: 100%; padding: 13px 16px; border: 1.5px solid var(--border);
+      border-radius: var(--r-sm); font-family: inherit; font-size: 15px; color: var(--text);
+      background: #fff; outline: none; transition: border-color .2s; }
+    .finput:focus { border-color: var(--accent); }
+    .finput::placeholder { color: #BEB8B1; }
+
+    /* ── Step editor ── */
+    .step-ed { background: #fff; border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      padding: 15px; margin-bottom: 10px; transition: border-color .2s; }
+    .step-ed:focus-within { border-color: var(--accent); }
+    .step-ed-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 11px; }
+    .step-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--accent); }
+    .step-row { display: grid; grid-template-columns: 1fr 74px; gap: 10px; margin-bottom: 11px; }
+    .sinput { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border);
+      border-radius: var(--r-xs); font-family: inherit; font-size: 14px; color: var(--text);
+      background: var(--bg); outline: none; transition: border-color .2s, background .2s; }
+    .sinput:focus { border-color: var(--accent); background: #fff; }
+    .sinput::placeholder { color: #BEB8B1; }
+    .step-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+    /* Toggle */
+    .tog-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+    .tog-wrap span { font-size: 13px; color: var(--muted); }
+    .tog { position: relative; width: 38px; height: 22px; background: var(--border);
+      border-radius: 11px; flex-shrink: 0; transition: background .2s; cursor: pointer; }
+    .tog input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .tog-thumb { position: absolute; width: 18px; height: 18px; background: #fff;
+      border-radius: 50%; top: 2px; left: 2px; transition: transform .2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.18); pointer-events: none; }
+    .tog:has(input:checked) { background: var(--accent); }
+    .tog:has(input:checked) .tog-thumb { transform: translateX(16px); }
+
+    .esel { padding: 6px 10px; border: 1.5px solid var(--border); border-radius: var(--r-xs);
+      font-family: inherit; font-size: 13px; color: var(--text); background: var(--bg);
+      cursor: pointer; outline: none; transition: border-color .2s; }
+    .esel:focus { border-color: var(--accent); }
+
+    /* ── Setup sliders ── */
+    .sl-hdr { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 14px; }
+    .sl-lbl { font-size: 15px; font-weight: 600; }
+    .sl-val { font-size: 30px; font-weight: 700; color: var(--accent); letter-spacing: -1px; }
+    input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+      background: var(--border); border-radius: 3px; outline: none; cursor: pointer; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px;
+      background: var(--accent); border-radius: 50%; cursor: pointer;
+      box-shadow: 0 2px 10px rgba(196,113,74,.45); transition: transform .15s; }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+    input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var(--accent);
+      border-radius: 50%; cursor: pointer; border: none; box-shadow: 0 2px 10px rgba(196,113,74,.45); }
+    .sl-hints { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--muted); }
+    .preview-box { background: var(--accent-lt); border-radius: var(--r-sm);
+      padding: 13px 16px; font-size: 13px; font-weight: 500; color: var(--accent-dk);
+      line-height: 1.6; min-height: 44px; }
+
+    /* ── Run view ── */
+    #run-prog-track { position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: var(--border); }
+    #run-prog-fill { height: 100%; background: var(--accent); border-radius: 0 2px 2px 0;
+      transition: width .6s ease; }
+
+    .run-home-btn { position: absolute; top: 14px; left: 14px; height: 36px; padding: 0 14px;
+      border-radius: 18px; background: var(--border); border: none; cursor: pointer;
+      display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .82rem;
+      font-weight: 600; letter-spacing: .01em; transition: all .18s; z-index: 10; }
+    .run-home-btn:hover { background: var(--accent-lt); color: var(--accent); }
+
+    .run-x { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px;
+      border-radius: 50%; background: var(--border); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; color: var(--muted);
+      transition: all .18s; }
+    .run-x:hover { background: var(--accent-lt); color: var(--accent); }
+
+    #run-step-view { flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; width: 100%; }
+
+    .run-counter { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 10px;
+      background: rgba(194,220,250,.4); padding: 5px 14px; border-radius: 20px; }
+    #run-step-content { display: flex; flex-direction: column; align-items: center;
+      transition: opacity .25s ease, transform .25s ease; }
+    .run-name { font-size: 32px; font-weight: 800; text-align: center; letter-spacing: -.8px;
+      line-height: 1.15; max-width: 300px;
+      background: linear-gradient(120deg, var(--text) 0%, var(--accent) 120%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; }
+    .run-badge { display: inline-block; font-size: 12px; padding: 4px 12px; border-radius: 20px;
+      background: var(--accent-lt); color: var(--accent); font-weight: 500; margin-top: 10px; }
+    .run-badge.opt { background: var(--border); color: var(--muted); }
+
+    /* Timer ring */
+    .timer-wrap { position: relative; width: 196px; height: 196px; margin: 36px 0 28px;
+      display: flex; align-items: center; justify-content: center; }
+    .timer-svg { position: absolute; inset: 0; transform: rotate(-90deg); overflow: visible; }
+    .t-bg { fill: none; stroke: var(--border); stroke-width: 5; }
+    .t-fill { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear; }
+    .timer-num { font-size: 46px; font-weight: 300; color: var(--accent); letter-spacing: -2px;
+      font-variant-numeric: tabular-nums; position: relative; }
+
+    .run-btns { display: flex; gap: 12px; width: 100%; max-width: 310px; }
+
+    /* Completion */
+    #run-done { flex: 1; display: none; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center; width: 100%; }
+    .done-emoji { font-size: 68px; margin-bottom: 22px; }
+    .done-title { font-size: 30px; font-weight: 700; letter-spacing: -.8px; margin-bottom: 8px; }
+    .done-sub { font-size: 15px; color: var(--muted); margin-bottom: 48px; }
+
+    /* ── History ── */
+    .hist-card { background: var(--surface); border-radius: var(--r-sm); padding: 16px 18px;
+      margin: 0 20px 10px; display: flex; justify-content: space-between; align-items: center;
+      box-shadow: var(--sh-sm); }
+    .hist-name { font-size: 15px; font-weight: 600; }
+    .hist-date { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .hist-right { text-align: right; flex-shrink: 0; }
+    .hist-pct { font-size: 20px; font-weight: 700; color: var(--accent); }
+    .hist-mood { font-size: 13px; color: var(--muted); margin-top: 1px; }
+
+    /* ── Reflection modal ── */
+    #refl-modal { position: fixed; inset: 0; z-index: 400; background: rgba(28,28,30,.52);
+      display: none; align-items: flex-end; justify-content: center; padding: 20px; }
+    #refl-modal.open { display: flex; }
+    .refl-sheet { background: #fff; border-radius: 24px 24px 20px 20px; padding: 30px;
+      width: 100%; max-width: 480px; box-shadow: var(--sh-lg); animation: slideUp .35s ease; }
+    .refl-title { font-size: 22px; font-weight: 700; letter-spacing: -.4px; margin-bottom: 5px; }
+    .refl-sub { font-size: 14px; color: var(--muted); margin-bottom: 18px; }
+    .refl-ta { width: 100%; height: 108px; padding: 13px 16px; border: 1.5px solid var(--border);
+      border-radius: var(--r-sm); font-family: inherit; font-size: 15px; color: var(--text);
+      resize: none; outline: none; transition: border-color .2s; line-height: 1.55; }
+    .refl-ta:focus { border-color: var(--accent); }
+    .refl-ta::placeholder { color: #BEB8B1; }
+
+    /* ── Toast ── */
+    #toast { position: fixed; bottom: 94px; left: 50%; transform: translateX(-50%) translateY(14px);
+      background: var(--text); color: #fff; padding: 10px 18px; border-radius: 50px;
+      font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; z-index: 500;
+      transition: all .3s cubic-bezier(.34,1.56,.64,1); white-space: nowrap; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Empty states ── */
+    .empty { text-align: center; padding: 60px 32px; }
+    .empty-icon { font-size: 52px; margin-bottom: 14px; }
+    .empty-ttl { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .empty-body { font-size: 14px; color: var(--muted); }
+
+    /* ── Animations ── */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes bouncyIn { 0% { opacity:0; transform: translateY(20px) scale(.95); }
+      60% { opacity:1; transform: translateY(-4px) scale(1.01); }
+      100% { opacity:1; transform: translateY(0) scale(1); } }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes popIn { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .anim { animation: bouncyIn .4s cubic-bezier(.34,1.3,.64,1) both; }
+    .done-emoji { animation: popIn .5s cubic-bezier(.34,1.56,.64,1) both; }
+
+    ::-webkit-scrollbar { width: 0; }
+
+    /* ── Streak badge ── */
+    .streak-badge { display: inline-flex; align-items: center; gap: 6px;
+      background: #FFF8E7; border: 1.5px solid #F5D87A; border-radius: 50px;
+      padding: 5px 14px 5px 10px; font-size: 13px; font-weight: 700; color: #B07D10;
+      margin-top: 12px; box-shadow: 0 2px 8px rgba(245,166,35,.2); }
+
+    /* ── History stats bar ── */
+    .hist-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+      padding: 0 18px; margin-bottom: 20px; }
+    .hstat { background: var(--surface); border-radius: var(--r-sm); padding: 16px 10px;
+      text-align: center; box-shadow: var(--sh-sm);
+      border: 1px solid rgba(194,220,250,.5); }
+    .hstat-val { font-size: 24px; font-weight: 800; color: var(--accent); letter-spacing: -.8px; }
+    .hstat-lbl { font-size: 10px; font-weight: 700; color: var(--muted); margin-top: 3px;
+      text-transform: uppercase; letter-spacing: .8px; }
+
+    /* ── Pause button ── */
+    .run-pause { width: 44px; height: 44px; border-radius: 50%; background: var(--border);
+      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); transition: all .18s; flex-shrink: 0; }
+    .run-pause:hover { background: #DDD8D0; color: var(--text); }
+    .run-pause.paused { background: var(--accent-lt); color: var(--accent); }
+
+    /* Paused overlay */
+    #pause-overlay { position: absolute; inset: 0; background: rgba(7,27,46,.88);
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 10; gap: 20px; }
+    #pause-overlay.show { display: flex; }
+    .pause-txt  { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
+    .pause-hint { font-size: 14px; color: var(--muted); }
+
+    /* Big play button inside overlay */
+    /* ── Play button assembly ── */
+    .play-outer {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      animation: floatBounce 2.6s ease-in-out infinite;
+      width: 92px; height: 92px;
+    }
+
+    /* Water ripple rings */
+    .play-ripple {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      border: 1.5px solid rgba(63,165,245,.55);
+      animation: rippleOut 2.6s ease-out infinite;
+    }
+    .play-ripple:nth-child(2) { animation-delay: .87s; }
+    .play-ripple:nth-child(3) { animation-delay: 1.74s; }
+
+    @keyframes rippleOut {
+      0%   { transform: scale(1); opacity: .85; }
+      100% { transform: scale(3.2); opacity: 0; }
+    }
+
+    /* Spinning arc ring */
+    .play-spin-ring {
+      position: absolute;
+      width: 108px; height: 108px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: rgba(96,200,255,.95);
+      border-right-color: rgba(96,200,255,.3);
+      animation: spinRing 1.8s linear infinite;
+      pointer-events: none;
+    }
+
+    /* Opposite slower spin (counter) */
+    .play-spin-ring-2 {
+      position: absolute;
+      width: 122px; height: 122px;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(96,200,255,.25);
+      animation: spinRing 8s linear infinite reverse;
+      pointer-events: none;
+    }
+
+    @keyframes spinRing { to { transform: rotate(360deg); } }
+
+    /* Main button */
+    .pause-play-btn {
+      width: 92px; height: 92px; border-radius: 50%;
+      background: linear-gradient(140deg, #60C8FF 0%, #1A72D8 50%, #0A3D8A 100%);
+      border: 2px solid rgba(255,255,255,.18);
+      cursor: pointer; position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+      animation: glowPulse 2.6s ease-in-out infinite;
+      transition: transform .15s ease, filter .15s ease;
+    }
+    .pause-play-btn::before {
+      content: '';
+      position: absolute; inset: 3px;
+      border-radius: 50%;
+      background: linear-gradient(160deg, rgba(255,255,255,.18) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .pause-play-btn:hover  { transform: scale(1.07); filter: brightness(1.12); }
+    .pause-play-btn:active { transform: scale(.94);  filter: brightness(.9); }
+    .pause-play-btn svg { margin-left: 6px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
+
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 24px rgba(26,114,216,.5), 0 0 60px rgba(26,114,216,.2), 0 8px 28px rgba(0,0,0,.35); }
+      50%       { box-shadow: 0 0 42px rgba(26,114,216,.9), 0 0 90px rgba(63,165,245,.4), 0 8px 28px rgba(0,0,0,.35); }
+    }
+
+    @keyframes floatBounce {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-12px); }
+    }
+
+    /* Step reorder buttons */
+    .step-reorder { display: flex; gap: 2px; }
+    .reorder-btn { width: 28px; height: 28px; border-radius: 6px; border: none; cursor: pointer;
+      background: var(--bg); color: var(--muted); display: flex; align-items: center;
+      justify-content: center; transition: all .15s; font-size: 13px; }
+    .reorder-btn:hover { background: var(--border); color: var(--text); }
+    .reorder-btn:disabled { opacity: .3; cursor: default; }
+
+    /* Confetti canvas */
+    #confetti-canvas { position: fixed; inset: 0; z-index: 450; pointer-events: none; display: none; }
+
+    /* ── Dark mode (deep ocean) ── */
+    body.dark {
+      --bg:        #071B2E;
+      --surface:   #0D2A42;
+      --text:      #E0F0FF;
+      --muted:     #6A9EC0;
+      --accent:    #3FA5F5;
+      --accent2:   #00D4FF;
+      --accent-lt: #0A2540;
+      --accent-dk: #60BBFF;
+      --gold:      #F5C842;
+      --gold-lt:   #2A2000;
+      --border:    #153A5A;
+      --danger-bg: #3A1515;
+      --danger:    #FF6B6B;
+      --sh-sm:     0 2px 12px rgba(0,0,0,.4);
+      --sh:        0 6px 24px rgba(0,0,0,.5);
+      --sh-lg:     0 16px 48px rgba(0,0,0,.65);
+    }
+    body.dark {
+      background:
+        radial-gradient(ellipse 140% 55% at 60% -5%, #0A2A4A 0%, transparent 65%),
+        radial-gradient(ellipse 80% 40% at -10% 80%, #071E35 0%, transparent 60%),
+        #071B2E;
+    }
+    body.dark .page-title { background: linear-gradient(120deg, var(--text) 0%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    body.dark .run-name    { background: linear-gradient(120deg, var(--text) 0%, var(--accent) 120%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    body.dark .routine-card { border-color: rgba(21,58,90,.8); }
+    body.dark .streak-badge { background: #2A1E00; border-color: #6B4E00; color: #F5C842; }
+    body.dark #bottom-nav    { background: rgba(7,27,46,.94); }
+    body.dark #pause-overlay { background: rgba(7,27,46,.90); }
+    body.dark .refl-sheet    { background: #0D2A42; }
+    body.dark .step-ed       { background: #0D2A42; }
+    body.dark .finput        { background: #0D2A42; }
+    body.dark .sinput        { background: #091F33; }
+    body.dark .sinput:focus  { background: #0D2A42; }
+    body.dark .esel          { background: #091F33; }
+    body.dark .preview-box   { background: var(--accent-lt); }
+    body.dark .chip:nth-child(3n+1) { background: #0D2A42; color: #60C8FF; }
+    body.dark .chip:nth-child(3n+2) { background: #0D2A1E; color: #4DEBA0; }
+    body.dark .chip:nth-child(3n+3) { background: #1E0D42; color: #C084FC; }
+
+    /* ── Swipe hint ── */
+    .swipe-hint { display: flex; justify-content: space-between;
+      width: 100%; max-width: 310px; margin-top: 14px;
+      font-size: 12px; color: var(--border); font-weight: 500;
+      letter-spacing: .3px; user-select: none; pointer-events: none; }
+    .swipe-hint .sh-side { color: var(--muted); }
+
+    /* Swipe drag indicator */
+    .swipe-arrow { position: absolute; top: 50%; transform: translateY(-50%);
+      font-size: 36px; opacity: 0; transition: opacity .15s; pointer-events: none; }
+    #swipe-left-arr  { left: 20px;  color: var(--muted); }
+    #swipe-right-arr { right: 20px; color: var(--accent); }
+
+    /* ── Theme toggle ── */
+    .nav-item.theme-tog { font-size: 20px; }
+
+    /* ── Last run label ── */
+    .card-last-run { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+    /* ── Floating background orbs ── */
+    .orb { position: fixed; border-radius: 50%; filter: blur(70px);
+      pointer-events: none; z-index: 0; }
+    .orb1 { width: 380px; height: 380px; top: -120px; right: -100px;
+      background: radial-gradient(circle, rgba(96,200,255,.35) 0%, transparent 70%);
+      animation: orbDrift 22s ease-in-out infinite; }
+    .orb2 { width: 300px; height: 300px; bottom: 60px; left: -100px;
+      background: radial-gradient(circle, rgba(26,114,216,.25) 0%, transparent 70%);
+      animation: orbDrift 28s ease-in-out infinite reverse; animation-delay: -14s; }
+    .orb3 { width: 220px; height: 220px; top: 45%; right: -60px;
+      background: radial-gradient(circle, rgba(0,210,255,.18) 0%, transparent 70%);
+      animation: orbDrift 18s ease-in-out infinite; animation-delay: -8s; }
+    @keyframes orbDrift {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33%      { transform: translate(-20px,-30px) scale(1.06); }
+      66%      { transform: translate(15px, 20px) scale(.94); }
+    }
+    #app { position: relative; z-index: 1; }
+
+    /* ── Daily quote card ── */
+    .quote-card { margin: 0 18px 20px; padding: 18px 22px;
+      background: linear-gradient(135deg, rgba(26,114,216,.08) 0%, rgba(0,194,255,.06) 100%);
+      border: 1px solid rgba(26,114,216,.15); border-radius: var(--r);
+      position: relative; overflow: hidden; }
+    .quote-card::before { content: '"'; position: absolute; top: -10px; left: 14px;
+      font-size: 80px; color: rgba(26,114,216,.08); font-family: Georgia, serif; line-height: 1; }
+    .quote-text { font-size: 14px; font-style: italic; color: var(--text);
+      line-height: 1.6; font-weight: 500; position: relative; }
+    .quote-author { font-size: 12px; color: var(--muted); font-weight: 600;
+      margin-top: 8px; text-transform: uppercase; letter-spacing: .8px; }
+
+    /* ── Today's pick badge ── */
+    .todays-pick-badge { display: inline-flex; align-items: center; gap: 5px;
+      background: linear-gradient(90deg, #F5A623, #F5C842);
+      color: #7A4800; font-size: 11px; font-weight: 800;
+      padding: 3px 10px; border-radius: 20px; text-transform: uppercase;
+      letter-spacing: .6px; margin-bottom: 8px; }
+
+    /* ── Routine progress ring ── */
+    .card-ring { position: absolute; top: 18px; right: 60px;
+      display: flex; flex-direction: column; align-items: center; }
+    .ring-pct { font-size: 10px; font-weight: 700; color: var(--accent);
+      margin-top: 1px; letter-spacing: -.3px; }
+
+    /* ── Heat map ── */
+    .heatmap-wrap { padding: 0 18px; margin-bottom: 24px; }
+    .heatmap-title { font-size: 12px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
+    .heatmap-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 4px; }
+    .hm-day { aspect-ratio: 1; border-radius: 3px; background: rgba(194,220,250,.25);
+      transition: transform .15s; cursor: default; }
+    .hm-day:hover { transform: scale(1.3); }
+    .hm-day.hm-1 { background: rgba(26,114,216,.3); }
+    .hm-day.hm-2 { background: rgba(26,114,216,.55); }
+    .hm-day.hm-3 { background: rgba(26,114,216,.8); }
+    .hm-day.hm-today { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .heatmap-legend { display: flex; align-items: center; gap: 5px;
+      margin-top: 8px; justify-content: flex-end; font-size: 11px; color: var(--muted); }
+    .hm-swatch { width: 10px; height: 10px; border-radius: 2px; }
+    body.dark .hm-day { background: rgba(21,58,90,.5); }
+
+    /* ── Sound toggle ── */
+    #sound-btn { position: absolute; top: 20px; left: 18px; background: rgba(194,220,250,.4);
+      border: 1px solid var(--border); border-radius: 50px; padding: 6px 12px;
+      font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted);
+      display: flex; align-items: center; gap: 5px; transition: all .2s;
+      font-family: inherit; }
+    #sound-btn:hover { background: var(--accent-lt); color: var(--accent); }
+
+    /* ── Ambient run glow ── */
+    #view-run { transition: background .8s ease, opacity .3s ease; }
+
+    /* ── Step particle ── */
+    .step-particle { position: fixed; width: 8px; height: 8px; border-radius: 50%;
+      pointer-events: none; z-index: 9999; }
+
+    /* ── Reset step button ── */
+    .btn-reset { background: #EDE6F8; color: #7B3FC4; padding: 10px 20px; font-size: 13px;
+      font-weight: 600; border-radius: 50px; border: none; cursor: pointer;
+      font-family: inherit; display: inline-flex; align-items: center; gap: 7px;
+      transition: all .18s ease; letter-spacing: .1px; }
+    .btn-reset:hover  { background: #E2D5F5; transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(123,63,196,.25); }
+    .btn-reset:active { transform: scale(.96); }
+    body.dark .btn-reset { background: #2A1648; color: #BF8FFF; }
+    body.dark .btn-reset:hover { background: #341A58; box-shadow: 0 4px 14px rgba(140,80,220,.3); }
+  </style>
+</head>
+<body>
+<!-- Floating orbs -->
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<div id="app">
+
+  <!-- ══ HOME ══════════════════════════════════════════ -->
+  <div id="view-home" class="view">
+    <div class="page-header" style="position:relative;">
+      <button id="sound-btn" onclick="App.toggleSound()">
+        <span id="sound-icon">🔊</span> Sound
+      </button>
+      <div class="eyebrow" id="home-greeting">Good morning</div>
+      <div class="page-title">Your Rituals ✦</div>
+      <div class="page-sub">Ready to show up for yourself today?</div>
+      <div class="streak-badge" id="streak-badge" style="display:none">
+        🔥 <span id="streak-count">0</span>-day streak
+      </div>
+    </div>
+    <div class="quote-card" id="quote-card">
+      <div class="quote-text" id="quote-text"></div>
+      <div class="quote-author" id="quote-author"></div>
+    </div>
+    <div id="routine-list"></div>
+    <div style="padding: 0 20px;">
+      <button class="btn btn-secondary btn-full" onclick="App.showCreate()">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create new routine
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ CREATE ════════════════════════════════════════ -->
+  <div id="view-create" class="view">
+    <div class="page-header" style="padding-bottom: 0;">
+      <button class="back-btn" onclick="App.showView('home')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </button>
+      <div class="page-title" id="create-heading" style="margin-top: 10px;">New Routine</div>
+    </div>
+    <div style="height: 22px;"></div>
+    <div class="fsec">
+      <label class="flabel">Routine Name</label>
+      <input id="rname" type="text" class="finput" placeholder="e.g. Morning Ritual, Wind Down…">
+    </div>
+    <div style="padding: 0 22px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+      <span class="flabel" style="margin: 0;">Steps</span>
+      <button class="btn btn-secondary btn-sm" onclick="App.addStep()">+ Add step</button>
+    </div>
+    <div id="steps-container" style="padding: 0 22px;"></div>
+    <div style="padding: 16px 22px 0;">
+      <button class="btn btn-primary btn-full" style="padding: 16px;" onclick="App.saveRoutine()">Save Routine</button>
+    </div>
+  </div>
+
+  <!-- ══ SETUP ═════════════════════════════════════════ -->
+  <div id="view-setup" class="view">
+    <div class="page-header">
+      <button class="back-btn" onclick="App.showView('home')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </button>
+      <div class="eyebrow" id="setup-eyebrow" style="margin-top: 14px;"></div>
+      <div class="page-title">Let's make it work for you ✦</div>
+    </div>
+
+    <div class="fsec">
+      <div class="sl-hdr">
+        <div class="sl-lbl">How are you feeling?</div>
+        <div class="sl-val" id="mood-disp">😐 3</div>
+      </div>
+      <input type="range" id="mood-sl" min="1" max="5" value="3" oninput="App.onMood()">
+      <div class="sl-hints"><span>😞 Low</span><span>😄 Great</span></div>
+    </div>
+
+    <div class="fsec">
+      <div class="sl-hdr">
+        <div class="sl-lbl">Time available</div>
+        <div class="sl-val" id="time-disp">30 min</div>
+      </div>
+      <input type="range" id="time-sl" min="5" max="180" step="5" value="30" oninput="App.onTime()">
+      <div class="sl-hints"><span>5 min</span><span>3 hrs</span></div>
+    </div>
+
+    <div class="fsec">
+      <div class="preview-box" id="setup-preview"></div>
+    </div>
+
+    <div style="padding: 0 22px;">
+      <button class="btn btn-primary btn-full" style="padding: 17px; font-size: 16px;" onclick="App.startRun()">
+        Start Ritual →
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ RUN (fixed full-screen) ═══════════════════════ -->
+  <div id="view-run">
+    <div id="run-prog-track"><div id="run-prog-fill" style="width:0%"></div></div>
+
+    <!-- Top bar: home left, close right -->
+    <button class="run-home-btn" onclick="App.confirmEnd()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      Home
+    </button>
+
+    <button class="run-x" onclick="App.confirmEnd()">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <!-- Step mode -->
+    <div id="run-step-view">
+      <div class="run-counter" id="run-counter">Step 1 of 6</div>
+      <div id="run-step-content">
+        <div class="run-name" id="run-sname"></div>
+        <div style="min-height: 30px; text-align: center;" id="run-badge-wrap"></div>
+        <div class="timer-wrap">
+          <svg class="timer-svg" viewBox="0 0 196 196">
+            <circle class="t-bg" cx="98" cy="98" r="86"/>
+            <circle class="t-fill" cx="98" cy="98" r="86" id="t-ring"
+              style="stroke-dasharray:540.35; stroke-dashoffset:0;"/>
+          </svg>
+          <div class="timer-num" id="run-timer">5:00</div>
+        </div>
+      </div>
+      <!-- Swipe direction arrows (shown while dragging) -->
+      <div class="swipe-arrow" id="swipe-left-arr">←</div>
+      <div class="swipe-arrow" id="swipe-right-arr">→</div>
+
+      <div class="run-btns">
+        <button class="btn btn-ghost" style="flex:1;" onclick="App.skipStep()">Skip</button>
+        <button class="run-pause" id="run-pause-btn" title="Pause" onclick="App.togglePause()">
+          <svg id="pause-icon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+          </svg>
+          <svg id="play-icon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="display:none">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </button>
+        <button class="btn btn-primary" style="flex:2;" onclick="App.doneStep()">Done ✓</button>
+      </div>
+      <div class="swipe-hint">
+        <span class="sh-side">← Skip</span>
+        <span>swipe</span>
+        <span class="sh-side">Done →</span>
+      </div>
+      <button class="btn btn-reset" onclick="App.resetStep()" style="margin-top: 10px;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+        </svg>
+        Reset step
+      </button>
+    </div>
+
+    <!-- Paused overlay -->
+    <div id="pause-overlay">
+      <div class="pause-txt">Paused</div>
+      <div class="play-outer">
+        <div class="play-ripple"></div>
+        <div class="play-ripple"></div>
+        <div class="play-ripple"></div>
+        <div class="play-spin-ring-2"></div>
+        <div class="play-spin-ring"></div>
+        <button class="pause-play-btn" onclick="App.togglePause()">
+          <svg width="34" height="34" fill="white" viewBox="0 0 24 24">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </button>
+      </div>
+      <div class="pause-hint">Tap to continue</div>
+    </div>
+
+    <!-- Completion mode -->
+    <div id="run-done">
+      <div class="done-emoji" id="done-emoji">🎉</div>
+      <div class="done-title" id="done-title">Ritual complete!</div>
+      <div class="done-sub" id="done-sub">You completed 5 of 6 steps</div>
+      <button class="btn btn-primary" style="padding: 16px 48px; font-size: 16px;" onclick="App.finishRun()">
+        Back to Home
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ HISTORY ════════════════════════════════════════ -->
+  <div id="view-history" class="view">
+    <div class="page-header">
+      <div class="page-title">History</div>
+      <div class="page-sub">Your ritual log</div>
+    </div>
+    <div id="hist-stats-bar"></div>
+    <div class="heatmap-wrap" id="heatmap-wrap" style="display:none">
+      <div class="heatmap-title">Last 91 days</div>
+      <div class="heatmap-grid" id="heatmap-grid"></div>
+      <div class="heatmap-legend">
+        <span>Less</span>
+        <div class="hm-swatch" style="background:rgba(194,220,250,.3)"></div>
+        <div class="hm-swatch hm-1" style="background:rgba(26,114,216,.3)"></div>
+        <div class="hm-swatch hm-2" style="background:rgba(26,114,216,.55)"></div>
+        <div class="hm-swatch hm-3" style="background:rgba(26,114,216,.8)"></div>
+        <span>More</span>
+      </div>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- ══ REFLECTION MODAL ══════════════════════════════ -->
+  <div id="refl-modal">
+    <div class="refl-sheet">
+      <div class="refl-title">How are you feeling now?</div>
+      <div class="refl-sub">Take a moment to notice any shift since you started.</div>
+      <textarea id="refl-text" class="refl-ta" placeholder="Write freely… no judgment here."></textarea>
+      <button class="btn btn-primary btn-full" style="margin-top: 14px; padding: 15px;" onclick="App.submitRefl()">
+        Finish Ritual
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ CONFETTI CANVAS ══════════════════════════════ -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- ══ TOAST ══════════════════════════════════════════ -->
+  <div id="toast"></div>
+
+  <!-- ══ BOTTOM NAV ════════════════════════════════════ -->
+  <nav id="bottom-nav">
+    <button class="nav-item active" id="nav-home" onclick="App.showView('home')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      Home
+    </button>
+    <button class="nav-item" id="nav-history" onclick="App.showView('history')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      History
+    </button>
+    <button class="nav-item theme-tog" id="theme-btn" onclick="App.toggleTheme()" title="Toggle dark mode">
+      <span id="theme-icon">🌙</span>
+      <span style="font-size:11px;font-weight:500;">Theme</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const CIRC = 2 * Math.PI * 86; // ≈ 540.35 — matches SVG r="86"
+const MOODS = { 1: '😞', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' };
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function $i(id) { return document.getElementById(id); }
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function vibrate(ms = 10) { try { navigator.vibrate?.(ms); } catch(e) {} }
+function greeting() {
+  const h = new Date().getHours();
+  if (h >= 5  && h < 12) return 'Good morning';
+  if (h >= 12 && h < 17) return 'Good afternoon';
+  if (h >= 17 && h < 21) return 'Good evening';
+  return 'Good night';
+}
+function fmtDate(iso) {
+  const d = new Date(iso), now = new Date();
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  const t = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  if (d.toDateString() === now.toDateString())   return `Today at ${t}`;
+  if (d.toDateString() === yest.toDateString())  return `Yesterday at ${t}`;
+  return d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) + ` at ${t}`;
+}
+
+// Returns the number of consecutive days (ending today/yesterday) that have a run
+function calcStreak(history) {
+  if (!history.length) return 0;
+  const days = new Set(history.map(e => new Date(e.date).toDateString()));
+  let streak = 0;
+  const cursor = new Date();
+  // Allow streak to start from today or yesterday
+  if (!days.has(cursor.toDateString())) cursor.setDate(cursor.getDate() - 1);
+  while (days.has(cursor.toDateString())) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+// ── Confetti ─────────────────────────────────────────────────
+function launchConfetti() {
+  const canvas = $i('confetti-canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+
+  const COLORS = ['#1A72D8','#3FA5F5','#60C8FF','#90DEFF','#0D4FA8','#29B6E8','#A8DFFF','#5BA3E0'];
+  const pieces = Array.from({ length: 110 }, () => ({
+    x:   Math.random() * canvas.width,
+    y:   -10 - Math.random() * canvas.height * .5,
+    w:   6  + Math.random() * 8,
+    h:   10 + Math.random() * 8,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    rot:  Math.random() * 360,
+    vx:  (Math.random() - .5) * 2.5,
+    vy:  2 + Math.random() * 3.5,
+    vr:  (Math.random() - .5) * 6,
+  }));
+
+  let frame = 0;
+  const MAX_FRAMES = 140;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - frame / MAX_FRAMES);
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.rot += p.vr;
+    });
+    frame++;
+    if (frame < MAX_FRAMES) requestAnimationFrame(draw);
+    else { ctx.clearRect(0,0,canvas.width,canvas.height); canvas.style.display = 'none'; }
+  }
+  requestAnimationFrame(draw);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STORE
+// ═══════════════════════════════════════════════════════════
+const Store = {
+  routines: [],
+  history:  [],
+
+  load() {
+    const r = localStorage.getItem('rr_routines');
+    const h = localStorage.getItem('rr_history');
+    this.routines = r ? JSON.parse(r) : this.defaults();
+    this.history  = h ? JSON.parse(h) : [];
+    if (!r) this.saveR();
+  },
+  saveR() { localStorage.setItem('rr_routines', JSON.stringify(this.routines)); },
+  saveH() { localStorage.setItem('rr_history',  JSON.stringify(this.history));  },
+
+  defaults() {
+    return [
+      {
+        id: 'rr-morning', name: 'Morning Ritual',
+        steps: [
+          { id: 'm1', name: 'Drink a glass of water',  duration: 1,  optional: false, energy: 'low'    },
+          { id: 'm2', name: 'Light stretching',         duration: 5,  optional: true,  energy: 'low'    },
+          { id: 'm3', name: 'Morning journaling',       duration: 10, optional: true,  energy: 'medium' },
+          { id: 'm4', name: 'Cold shower',              duration: 5,  optional: true,  energy: 'high'   },
+          { id: 'm5', name: 'Breathe & meditate',       duration: 5,  optional: false, energy: 'low'    },
+          { id: 'm6', name: 'Plan the day',             duration: 5,  optional: false, energy: 'medium' },
+        ]
+      },
+      {
+        id: 'rr-evening', name: 'Wind Down',
+        steps: [
+          { id: 'e1', name: 'Put phone away',   duration: 1,  optional: false, energy: 'low' },
+          { id: 'e2', name: 'Herbal tea',       duration: 3,  optional: true,  energy: 'low' },
+          { id: 'e3', name: 'Light reading',    duration: 15, optional: true,  energy: 'low' },
+          { id: 'e4', name: 'Gratitude list',   duration: 5,  optional: true,  energy: 'low' },
+          { id: 'e5', name: 'Dim the lights',   duration: 1,  optional: false, energy: 'low' },
+          { id: 'e6', name: 'Deep breathing',   duration: 3,  optional: false, energy: 'low' },
+        ]
+      }
+    ];
+  }
+};
+
+// ═══════════════════════════════════════════════════════════
+// QUOTES
+// ═══════════════════════════════════════════════════════════
+const QUOTES = [
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Small daily improvements are the key to staggering long-term results.", author: "Robin Sharma" },
+  { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
+  { text: "Motivation is what gets you started. Habit is what keeps you going.", author: "Jim Ryun" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "Take care of your body. It's the only place you have to live.", author: "Jim Rohn" },
+  { text: "An investment in yourself pays the best interest.", author: "Benjamin Franklin" },
+  { text: "Every morning we are born again. What we do today matters most.", author: "Buddha" },
+  { text: "You are one routine away from changing your entire life.", author: "Unknown" },
+  { text: "Don't count the days. Make the days count.", author: "Muhammad Ali" },
+  { text: "Progress, not perfection.", author: "Unknown" },
+  { text: "The ritual is the payoff. The results are the bonus.", author: "Unknown" },
+  { text: "Your future self is watching you right now through memories.", author: "Unknown" },
+  { text: "Showing up is 80% of life.", author: "Woody Allen" },
+  { text: "Be the energy you want to attract.", author: "Unknown" },
+];
+
+function renderQuote() {
+  const seed = new Date().toDateString(); // changes daily
+  let hash = 0;
+  for (const c of seed) hash = (hash * 31 + c.charCodeAt(0)) & 0xffffffff;
+  const q = QUOTES[Math.abs(hash) % QUOTES.length];
+  $i('quote-text').textContent   = q.text;
+  $i('quote-author').textContent = '— ' + q.author;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SOUND TOGGLE
+// ═══════════════════════════════════════════════════════════
+let soundEnabled = localStorage.getItem('rr_sound') !== 'off';
+function initSound() {
+  $i('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+}
+
+// ── Web Audio chime ──────────────────────────────────────────
+function playChime(type = 'done') {
+  if (!soundEnabled) return;
+  try {
+    const ac    = new (window.AudioContext || window.webkitAudioContext)();
+    // done = two ascending notes, skip = single soft low note
+    const notes = type === 'done' ? [523.25, 659.25] : [349.23];
+    notes.forEach((freq, i) => {
+      const osc  = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t0 = ac.currentTime + i * 0.13;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.15, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.65);
+      osc.start(t0);
+      osc.stop(t0 + 0.7);
+    });
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// PARTICLES
+// ═══════════════════════════════════════════════════════════
+function burstParticles() {
+  const btn = document.querySelector('#run-step-view .btn-primary');
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const COLORS = ['#60C8FF','#1A72D8','#00D4FF','#FFFFFF','#3FA5F5','#A8DFFF'];
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('div');
+    el.className = 'step-particle';
+    const size = 5 + Math.random() * 7;
+    el.style.cssText = `width:${size}px;height:${size}px;background:${COLORS[i%COLORS.length]};
+      left:${cx}px;top:${cy}px;position:fixed;border-radius:50%;pointer-events:none;z-index:9999;
+      opacity:1;transition:transform .65s cubic-bezier(.16,1,.3,1),opacity .65s ease;`;
+    document.body.appendChild(el);
+    const angle = (i / 14) * Math.PI * 2 + Math.random() * .4;
+    const dist  = 45 + Math.random() * 65;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.transform = `translate(${Math.cos(angle)*dist}px,${Math.sin(angle)*dist - 20}px)`;
+      el.style.opacity   = '0';
+    }));
+    setTimeout(() => el.remove(), 700);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// HEAT MAP
+// ═══════════════════════════════════════════════════════════
+function renderHeatMap(history) {
+  const wrap = $i('heatmap-wrap');
+  const grid = $i('heatmap-grid');
+  if (!history.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  const DAYS = 91;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const counts = {};
+  history.forEach(e => {
+    const d = new Date(e.date); d.setHours(0,0,0,0);
+    const key = d.toDateString();
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  grid.innerHTML = '';
+  for (let i = DAYS - 1; i >= 0; i--) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    const key  = d.toDateString();
+    const cnt  = counts[key] || 0;
+    const isToday = i === 0;
+    const lvl  = cnt === 0 ? 0 : cnt === 1 ? 1 : cnt === 2 ? 2 : 3;
+    const cell = document.createElement('div');
+    cell.className = `hm-day${lvl ? ' hm-'+lvl : ''}${isToday ? ' hm-today' : ''}`;
+    const mo = d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    cell.title = `${mo}: ${cnt} run${cnt !== 1 ? 's' : ''}`;
+    grid.appendChild(cell);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROGRESS RING
+// ═══════════════════════════════════════════════════════════
+function routineAvgPct(routineId) {
+  const entries = Store.history.filter(e => e.routineId === routineId);
+  if (!entries.length) return null;
+  return Math.round(entries.reduce((a, e) => a + e.completionPercent, 0) / entries.length);
+}
+
+function progressRingHTML(pct) {
+  if (pct === null) return '';
+  const r = 14; const circ = +(2 * Math.PI * r).toFixed(2);
+  const offset = +(circ * (1 - pct / 100)).toFixed(2);
+  return `<div class="card-ring" title="${pct}% avg completion">
+    <svg width="36" height="36" viewBox="0 0 36 36">
+      <circle cx="18" cy="18" r="${r}" fill="none" stroke="var(--border)" stroke-width="3"/>
+      <circle cx="18" cy="18" r="${r}" fill="none" stroke="var(--accent)" stroke-width="3"
+        stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+        transform="rotate(-90 18 18)" style="transition:stroke-dashoffset .6s ease"/>
+    </svg>
+    <span class="ring-pct">${pct}%</span>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TODAY'S PICK
+// ═══════════════════════════════════════════════════════════
+function getTodaysPick(routines, history) {
+  if (!routines.length) return null;
+  const h = new Date().getHours();
+  // Morning pick: prefer routines with "morning" in name
+  // Evening pick: prefer routines with "wind","evening","night" in name
+  const morning = /morning|wake|rise|am/i;
+  const evening = /wind|evening|night|sleep|bed|pm/i;
+  let scored = routines.map(r => {
+    const lastRun = history.find(e => e.routineId === r.id);
+    const daysSince = lastRun
+      ? (Date.now() - new Date(lastRun.date)) / 86400000
+      : 999;
+    let score = daysSince * 10; // more days = higher priority
+    if (h >= 5  && h < 12 && morning.test(r.name)) score += 50;
+    if (h >= 17 && h < 23 && evening.test(r.name)) score += 50;
+    return { id: r.id, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0].id;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADAPTATION ENGINE
+// ═══════════════════════════════════════════════════════════
+function adapt(routine, mood, minutes) {
+  let steps = routine.steps.map(s => ({ ...s }));
+  let hasRefl = false;
+
+  // Insert "Take a breath" when mood is low
+  if (mood <= 2) {
+    steps.unshift({ id: '__breath__', name: 'Take a breath', duration: 1,
+      optional: false, energy: 'low', _ins: true });
+    hasRefl = true;
+  }
+
+  // Reorder by energy based on mood
+  const ord = { low: 0, medium: 1, high: 2 };
+  const ins = steps.filter(s => s._ins);
+  let reg  = steps.filter(s => !s._ins);
+
+  if (mood <= 2) reg.sort((a, b) => ord[a.energy] - ord[b.energy]);  // easiest first
+  else if (mood >= 4) reg.sort((a, b) => ord[b.energy] - ord[a.energy]); // hardest first
+
+  steps = [...ins, ...reg];
+
+  // Trim optional steps to fit time budget
+  const total = steps.reduce((a, s) => a + s.duration, 0);
+  if (total > minutes) {
+    const req    = steps.filter(s => !s.optional);
+    const reqMin = req.reduce((a, s) => a + s.duration, 0);
+    let budget   = minutes - reqMin;
+    const opts   = steps.filter(s => s.optional);
+    const kept   = new Set();
+    for (const s of opts) {
+      if (budget >= s.duration) { kept.add(s.id); budget -= s.duration; }
+    }
+    steps = steps.filter(s => !s.optional || kept.has(s.id));
+  }
+
+  // Guarantee at least one step
+  if (!steps.length) steps = [routine.steps[0]];
+
+  return { steps, hasRefl };
+}
+
+// ═══════════════════════════════════════════════════════════
+// APP
+// ═══════════════════════════════════════════════════════════
+const App = {
+  curView:   'home',
+  editId:    null,
+  setupId:   null,
+  run:       null,
+  _stepN:    0,
+  _toastTmr: null,
+
+  // ── View management ──────────────────────────────────────
+  showView(name) {
+    // Stop any running timer when navigating away
+    if (name !== 'run' && this.run?.timer) clearInterval(this.run.timer);
+
+    // Hide all
+    ['home','create','setup','run','history'].forEach(v => {
+      const el = $i(`view-${v}`);
+      if (!el) return;
+      el.style.opacity = '0';
+      el.style.display = 'none';
+    });
+
+    $i('bottom-nav').style.display = name === 'run' ? 'none' : 'flex';
+
+    const el = $i(`view-${name}`);
+    if (!el) return;
+    el.style.display = name === 'run' ? 'flex' : 'block';
+
+    // Double rAF to let display kick in before opacity transition
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.opacity = '1'; }));
+
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    const nb = $i(`nav-${name}`);
+    if (nb) nb.classList.add('active');
+
+    this.curView = name;
+    if (name === 'home')    this.renderHome();
+    if (name === 'history') this.renderHistory();
+  },
+
+  // ── Sound toggle ─────────────────────────────────────────
+  toggleSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('rr_sound', soundEnabled ? 'on' : 'off');
+    $i('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+    this.toast(soundEnabled ? 'Sound on' : 'Sound off');
+  },
+
+  // ── 3D card tilt ─────────────────────────────────────────
+  initCardTilt() {
+    document.addEventListener('mousemove', e => {
+      document.querySelectorAll('.routine-card').forEach(card => {
+        const r = card.getBoundingClientRect();
+        const dx = (e.clientX - (r.left + r.width  / 2)) / r.width;
+        const dy = (e.clientY - (r.top  + r.height / 2)) / r.height;
+        if (Math.abs(dx) < 0.9 && Math.abs(dy) < 0.9) {
+          card.style.transform =
+            `perspective(700px) rotateY(${dx*7}deg) rotateX(${-dy*7}deg) translateY(-4px)`;
+        }
+      });
+    });
+    document.addEventListener('mouseleave', () => {
+      document.querySelectorAll('.routine-card').forEach(c => c.style.transform = '');
+    });
+  },
+
+  // ── Ambient run background ────────────────────────────────
+  updateAmbientBg() {
+    if (!this.run) return;
+    const progress = this.run.idx / this.run.steps.length;
+    const isDark = document.body.classList.contains('dark');
+    if (isDark) {
+      const hue = Math.round(210 - progress * 30);
+      $i('view-run').style.background =
+        `radial-gradient(ellipse 120% 60% at 50% 0%, hsl(${hue},60%,10%) 0%, #071B2E 70%)`;
+    } else {
+      const stop = Math.round(progress * 30);
+      $i('view-run').style.background =
+        `radial-gradient(ellipse 120% 60% at 50% 0%, hsl(${210-stop},90%,${92+stop*.1}%) 0%, #EDF4FF 70%)`;
+    }
+  },
+
+  // ── Home ─────────────────────────────────────────────────
+  renderHome() {
+    $i('home-greeting').textContent = greeting();
+    renderQuote();
+    const list = $i('routine-list');
+    const { routines } = Store;
+
+    // Streak badge
+    const streak = calcStreak(Store.history);
+    const sb = $i('streak-badge');
+    if (streak >= 2) {
+      $i('streak-count').textContent = streak;
+      sb.style.display = 'inline-flex';
+    } else {
+      sb.style.display = 'none';
+    }
+
+    if (!routines.length) {
+      list.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">🌱</div>
+          <div class="empty-ttl">No routines yet</div>
+          <div class="empty-body">Create your first ritual below.</div>
+        </div>`;
+      return;
+    }
+
+    const pickId = getTodaysPick(routines, Store.history);
+
+    list.innerHTML = routines.map((r, i) => {
+      const totalMin  = r.steps.reduce((a, s) => a + s.duration, 0);
+      const optCnt    = r.steps.filter(s => s.optional).length;
+      const preview   = r.steps.slice(0, 3).map(s => `<span class="chip">${esc(s.name)}</span>`).join('');
+      const more      = r.steps.length > 3 ? `<span class="chip">+${r.steps.length - 3}</span>` : '';
+      const lastEntry = Store.history.find(e => e.routineId === r.id);
+      const lastRun   = lastEntry
+        ? `Last run: ${fmtDate(lastEntry.date).split(' at')[0]} · ${lastEntry.completionPercent}% complete ✓`
+        : '✨ Fresh start waiting';
+      const avgPct  = routineAvgPct(r.id);
+      const ring    = progressRingHTML(avgPct);
+      const isPick  = r.id === pickId;
+      return `
+        <div class="routine-card anim" style="animation-delay:${i * .06}s">
+          ${ring}
+          <div class="card-top">
+            <div>
+              ${isPick ? `<div class="todays-pick-badge">⭐ Today's pick</div>` : ''}
+              <div class="card-name">${esc(r.name)}</div>
+              <div class="card-meta">${r.steps.length} steps · ${totalMin} min · ${optCnt} optional</div>
+              <div class="card-last-run">${lastRun}</div>
+            </div>
+            <div class="card-top-btns">
+              <button class="icon-btn" title="Duplicate" onclick="App.duplicateRoutine('${r.id}')">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+              <button class="icon-btn" title="Edit" onclick="App.showCreate('${r.id}')">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="icon-btn danger" title="Delete" onclick="App.deleteRoutine('${r.id}')">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="chips">${preview}${more}</div>
+          <div style="margin-top: 16px;">
+            <button class="btn btn-primary btn-full" style="padding:13px;" onclick="App.showSetup('${r.id}')">
+              Run →
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  },
+
+  deleteRoutine(id) {
+    if (!confirm('Delete this routine?')) return;
+    Store.routines = Store.routines.filter(r => r.id !== id);
+    Store.saveR();
+    this.renderHome();
+    this.toast('Routine deleted');
+  },
+
+  // ── Create / Edit ─────────────────────────────────────────
+  showCreate(id = null) {
+    this.editId = id;
+    this._stepN = 0;
+    $i('create-heading').textContent = id ? 'Edit Routine' : 'New Routine';
+    $i('rname').value = '';
+    $i('steps-container').innerHTML = '';
+
+    if (id) {
+      const r = Store.routines.find(x => x.id === id);
+      if (r) { $i('rname').value = r.name; r.steps.forEach(s => this.addStep(s)); }
+    } else {
+      this.addStep();
+    }
+    this.showView('create');
+  },
+
+  addStep(data = null) {
+    this._stepN++;
+    const c   = $i('steps-container');
+    const idx = c.children.length;
+    const sid = `se${this._stepN}`;
+    const div = document.createElement('div');
+    div.className = 'step-ed anim';
+    div.id = sid;
+    div.innerHTML = `
+      <div class="step-ed-hdr">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="step-reorder">
+            <button class="reorder-btn" title="Move up"   onclick="App.moveStep('${sid}',-1)">↑</button>
+            <button class="reorder-btn" title="Move down" onclick="App.moveStep('${sid}', 1)">↓</button>
+          </div>
+          <span class="step-label">Step ${idx + 1}</span>
+        </div>
+        <button class="icon-btn danger" onclick="App.removeStep('${sid}')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="step-row">
+        <input class="sinput s-name" type="text" placeholder="Step name" value="${data ? esc(data.name) : ''}">
+        <input class="sinput s-dur"  type="number" placeholder="min" min="1" max="240"
+          value="${data ? data.duration : 5}" style="text-align:center;">
+      </div>
+      <div class="step-foot">
+        <label class="tog-wrap">
+          <div class="tog">
+            <input type="checkbox" class="s-opt" ${data && data.optional ? 'checked' : ''}>
+            <div class="tog-thumb"></div>
+          </div>
+          <span>Optional</span>
+        </label>
+        <select class="esel s-energy">
+          <option value="low"    ${!data || data.energy === 'low'    ? 'selected' : ''}>⚡ Low</option>
+          <option value="medium" ${data && data.energy === 'medium'  ? 'selected' : ''}>⚡⚡ Medium</option>
+          <option value="high"   ${data && data.energy === 'high'    ? 'selected' : ''}>⚡⚡⚡ High</option>
+        </select>
+      </div>`;
+    c.appendChild(div);
+    this.renumSteps();
+  },
+
+  removeStep(sid) {
+    const el = $i(sid); if (el) el.remove();
+    this.renumSteps();
+  },
+
+  renumSteps() {
+    document.querySelectorAll('#steps-container .step-label').forEach((el, i) => {
+      el.textContent = `Step ${i + 1}`;
+    });
+  },
+
+  moveStep(sid, dir) {
+    const c = $i('steps-container');
+    const el = $i(sid);
+    if (!el) return;
+    const siblings = [...c.children];
+    const idx = siblings.indexOf(el);
+    const target = idx + dir;
+    if (target < 0 || target >= siblings.length) return;
+    if (dir === -1) c.insertBefore(el, siblings[target]);
+    else            c.insertBefore(siblings[target], el);
+    this.renumSteps();
+    vibrate(8);
+  },
+
+  saveRoutine() {
+    const name = $i('rname').value.trim();
+    if (!name) { this.toast('Enter a routine name'); return; }
+
+    const eds = document.querySelectorAll('#steps-container .step-ed');
+    if (!eds.length) { this.toast('Add at least one step'); return; }
+
+    const steps = []; let valid = true;
+    eds.forEach((el, i) => {
+      const nm = el.querySelector('.s-name').value.trim();
+      if (!nm) { this.toast(`Step ${i+1} needs a name`); valid = false; return; }
+      steps.push({
+        id:       uid(),
+        name:     nm,
+        duration: Math.max(1, parseInt(el.querySelector('.s-dur').value) || 1),
+        optional: el.querySelector('.s-opt').checked,
+        energy:   el.querySelector('.s-energy').value
+      });
+    });
+    if (!valid) return;
+
+    const wasEditing = this.editId;
+    if (wasEditing) {
+      const idx = Store.routines.findIndex(r => r.id === wasEditing);
+      if (idx >= 0) Store.routines[idx] = { ...Store.routines[idx], name, steps };
+    } else {
+      Store.routines.push({ id: uid(), name, steps });
+    }
+    Store.saveR();
+    this.editId = null;
+    this.showView('home');
+    this.toast(wasEditing ? 'Routine updated ✓' : 'Routine created ✓');
+  },
+
+  // ── Setup ─────────────────────────────────────────────────
+  showSetup(id) {
+    this.setupId = id;
+    const r = Store.routines.find(x => x.id === id);
+    if (!r) return;
+    $i('setup-eyebrow').textContent = r.name;
+    $i('mood-sl').value = 3;
+    $i('time-sl').value = 30;
+    this.onMood(); this.onTime();
+    this.showView('setup');
+  },
+
+  onMood() {
+    const v = parseInt($i('mood-sl').value);
+    $i('mood-disp').textContent = `${MOODS[v]} ${v}`;
+    this.updatePreview();
+  },
+
+  onTime() {
+    const v = parseInt($i('time-sl').value);
+    $i('time-disp').textContent = `${v} min`;
+    this.updatePreview();
+  },
+
+  updatePreview() {
+    const r = Store.routines.find(x => x.id === this.setupId);
+    if (!r) return;
+    const mood = parseInt($i('mood-sl').value);
+    const mins = parseInt($i('time-sl').value);
+    const { steps, hasRefl } = adapt(r, mood, mins);
+    const totalMin = steps.reduce((a, s) => a + s.duration, 0);
+    const orig     = r.steps.length;
+    const kept     = steps.filter(s => !s._ins).length;
+    const skipped  = orig - kept;
+
+    const lines = [`${steps.length} steps · ${totalMin} min total`];
+    if (skipped > 0) lines.push(`${skipped} optional step${skipped > 1 ? 's' : ''} removed to fit your time`);
+    if (hasRefl)     lines.push(`"Take a breath" step added for you ✦`);
+    $i('setup-preview').innerHTML = lines.join('<br>');
+  },
+
+  // ── Run ──────────────────────────────────────────────────
+  startRun() {
+    const r = Store.routines.find(x => x.id === this.setupId);
+    if (!r) return;
+    const mood = parseInt($i('mood-sl').value);
+    const mins = parseInt($i('time-sl').value);
+    const { steps, hasRefl } = adapt(r, mood, mins);
+
+    this.run = {
+      routine: r, steps, idx: 0, mood,
+      completed: 0, hasRefl, _paused: false, _done: false,
+      timer: null, timeLeft: 0, stepDur: 0,
+      startedAt: new Date().toISOString()
+    };
+
+    $i('run-done').style.display      = 'none';
+    $i('run-step-view').style.display = 'flex';
+    $i('pause-overlay').classList.remove('show');
+    $i('run-pause-btn').classList.remove('paused');
+    $i('pause-icon').style.display = '';
+    $i('play-icon').style.display  = 'none';
+    this.showView('run');
+    this.updateAmbientBg();
+    this.renderStep();
+  },
+
+  renderStep() {
+    const { steps, idx } = this.run;
+    const step  = steps[idx];
+    const total = steps.length;
+
+    // Progress bar
+    $i('run-prog-fill').style.width = `${(idx / total) * 100}%`;
+    $i('run-counter').textContent   = `Step ${idx + 1} of ${total}`;
+    $i('run-sname').textContent     = step.name;
+
+    // Badge
+    const bw = $i('run-badge-wrap');
+    if (step._ins)         bw.innerHTML = `<span class="run-badge">added for you ✦</span>`;
+    else if (step.optional) bw.innerHTML = `<span class="run-badge opt">optional</span>`;
+    else                    bw.innerHTML = '';
+
+    // Timer
+    clearInterval(this.run.timer);
+    this.run.timeLeft = step.duration * 60;
+    this.run.stepDur  = step.duration * 60;
+    this.updateTimer();
+
+    this.run.timer = setInterval(() => {
+      this.run.timeLeft--;
+      this.updateTimer();
+      if (this.run.timeLeft <= 0) {
+        clearInterval(this.run.timer);
+        setTimeout(() => { if (this.run && !this.run._done) this.doneStep(); }, 700);
+      }
+    }, 1000);
+  },
+
+  updateTimer() {
+    const t  = Math.max(0, this.run.timeLeft);
+    const m  = Math.floor(t / 60);
+    const s  = t % 60;
+    $i('run-timer').textContent = `${m}:${String(s).padStart(2, '0')}`;
+    const frac   = this.run.stepDur > 0 ? t / this.run.stepDur : 0;
+    const offset = CIRC * (1 - frac);
+    $i('t-ring').style.strokeDashoffset = offset;
+  },
+
+  doneStep() {
+    if (!this.run || this.run._paused) return;
+    clearInterval(this.run.timer);
+    vibrate(12); playChime('done');
+    burstParticles();
+    this.run.completed++;
+    this.advance();
+  },
+
+  skipStep() {
+    if (!this.run || this.run._paused) return;
+    clearInterval(this.run.timer);
+    vibrate(6); playChime('skip');
+    this.advance();
+  },
+
+  resetStep() {
+    if (!this.run || this.run._done) return;
+    // If paused, unpause first
+    if (this.run._paused) this.togglePause();
+    clearInterval(this.run.timer);
+    this.run.timeLeft = this.run.stepDur;
+    this.updateTimer();
+    this.run.timer = setInterval(() => {
+      this.run.timeLeft--;
+      this.updateTimer();
+      if (this.run.timeLeft <= 0) {
+        clearInterval(this.run.timer);
+        setTimeout(() => { if (this.run && !this.run._done) this.doneStep(); }, 700);
+      }
+    }, 1000);
+    vibrate(8);
+    // Animate the ring reset
+    const ring = $i('t-ring');
+    ring.style.transition = 'none';
+    ring.style.strokeDashoffset = '0';
+    setTimeout(() => { ring.style.transition = 'stroke-dashoffset 1s linear'; }, 50);
+  },
+
+  togglePause() {
+    if (!this.run) return;
+    const paused = !this.run._paused;
+    this.run._paused = paused;
+
+    const btn    = $i('run-pause-btn');
+    const overlay = $i('pause-overlay');
+    const pi     = $i('pause-icon');
+    const play   = $i('play-icon');
+
+    if (paused) {
+      clearInterval(this.run.timer);
+      btn.classList.add('paused');
+      pi.style.display   = 'none';
+      play.style.display = '';
+      overlay.classList.add('show');
+      // Freeze ring transition while paused
+      $i('t-ring').style.transition = 'none';
+    } else {
+      overlay.classList.remove('show');
+      btn.classList.remove('paused');
+      pi.style.display   = '';
+      play.style.display = 'none';
+      $i('t-ring').style.transition = 'stroke-dashoffset 1s linear';
+      // Resume countdown
+      this.run.timer = setInterval(() => {
+        this.run.timeLeft--;
+        this.updateTimer();
+        if (this.run.timeLeft <= 0) {
+          clearInterval(this.run.timer);
+          setTimeout(() => { if (this.run && !this.run._done) this.doneStep(); }, 700);
+        }
+      }, 1000);
+    }
+    vibrate(8);
+  },
+
+  advance() {
+    this.run.idx++;
+    this.updateAmbientBg();
+    if (this.run.idx >= this.run.steps.length) {
+      this.endRun();
+    } else {
+      const c = $i('run-step-content');
+      c.style.transition = 'none';
+      c.style.opacity    = '0';
+      c.style.transform  = 'translateY(-14px)';
+      setTimeout(() => {
+        this.renderStep();
+        requestAnimationFrame(() => {
+          c.style.transition = 'opacity .28s ease, transform .28s ease';
+          c.style.opacity    = '1';
+          c.style.transform  = 'translateY(0)';
+        });
+      }, 180);
+    }
+  },
+
+  endRun() {
+    const { run } = this;
+    clearInterval(run.timer);
+    run._done = true;
+    const pct = Math.round((run.completed / run.steps.length) * 100);
+
+    Store.history.unshift({
+      id: uid(), routineId: run.routine.id, routineName: run.routine.name,
+      date: run.startedAt, mood: run.mood,
+      completionPercent: pct, stepsCompleted: run.completed, totalSteps: run.steps.length
+    });
+    Store.saveH();
+
+    $i('run-prog-fill').style.width = '100%';
+
+    if (run.hasRefl) {
+      $i('refl-text').value = '';
+      $i('refl-modal').classList.add('open');
+    } else {
+      this.showCompletion(pct, run.completed, run.steps.length);
+    }
+  },
+
+  showCompletion(pct, done, total) {
+    $i('run-step-view').style.display = 'none';
+    $i('run-done').style.display = 'flex';
+    // Make sure pause overlay is gone
+    $i('pause-overlay').classList.remove('show');
+
+    const emoji = pct >= 80 ? '🎉' : pct >= 50 ? '✨' : '💪';
+    const title = pct >= 80 ? 'Ritual complete!' : pct >= 50 ? 'Great effort!' : 'Keep showing up!';
+
+    // Re-trigger pop animation
+    const em = $i('done-emoji');
+    em.style.animation = 'none';
+    void em.offsetWidth;
+    em.style.animation = 'popIn .5s cubic-bezier(.34,1.56,.64,1) both';
+
+    em.textContent               = emoji;
+    $i('done-title').textContent = title;
+    $i('done-sub').textContent   = `You completed ${done} of ${total} steps`;
+
+    // Confetti on strong completion
+    if (pct >= 80) setTimeout(launchConfetti, 200);
+    vibrate([10, 60, 10, 60, 20]);
+  },
+
+  confirmEnd() {
+    // If already on completion screen, just go home
+    if (this.run?._done) { this.finishRun(); return; }
+    if (!confirm('End this ritual early?')) return;
+    clearInterval(this.run?.timer);
+
+    if (this.run) {
+      const pct = Math.round((this.run.completed / this.run.steps.length) * 100);
+      Store.history.unshift({
+        id: uid(), routineId: this.run.routine.id, routineName: this.run.routine.name,
+        date: this.run.startedAt, mood: this.run.mood,
+        completionPercent: pct, stepsCompleted: this.run.completed, totalSteps: this.run.steps.length
+      });
+      Store.saveH();
+    }
+    this.run = null;
+    this.showView('home');
+  },
+
+  submitRefl() {
+    $i('refl-modal').classList.remove('open');
+    const { run } = this;
+    this.showCompletion(
+      Math.round((run.completed / run.steps.length) * 100),
+      run.completed, run.steps.length
+    );
+  },
+
+  finishRun() {
+    this.run = null;
+    this.showView('home');
+  },
+
+  // ── History ──────────────────────────────────────────────
+  renderHistory() {
+    const list    = $i('history-list');
+    const statsEl = $i('hist-stats-bar');
+    const { history } = Store;
+
+    renderHeatMap(history);
+
+    if (!history.length) {
+      statsEl.innerHTML = '';
+      list.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">📋</div>
+          <div class="empty-ttl">No history yet</div>
+          <div class="empty-body">Complete a ritual to see your log here.</div>
+        </div>`;
+      return;
+    }
+
+    // Stats bar
+    const totalRuns = history.length;
+    const avgMood   = (history.reduce((a, e) => a + e.mood, 0) / totalRuns).toFixed(1);
+    const streak    = calcStreak(history);
+    const avgComp   = Math.round(history.reduce((a, e) => a + e.completionPercent, 0) / totalRuns);
+
+    statsEl.innerHTML = `
+      <div class="hist-stats anim">
+        <div class="hstat">
+          <div class="hstat-val">${totalRuns}</div>
+          <div class="hstat-lbl">Total runs</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val">${avgComp}%</div>
+          <div class="hstat-lbl">Avg. done</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val">${streak > 0 ? '🔥' + streak : avgMood}</div>
+          <div class="hstat-lbl">${streak > 0 ? 'Day streak' : 'Avg. mood'}</div>
+        </div>
+      </div>`;
+
+    list.innerHTML = history.map((e, i) => `
+      <div class="hist-card anim" style="animation-delay:${i * .04}s">
+        <div>
+          <div class="hist-name">${esc(e.routineName)}</div>
+          <div class="hist-date">${fmtDate(e.date)}</div>
+        </div>
+        <div class="hist-right">
+          <div class="hist-pct">${e.completionPercent}%</div>
+          <div class="hist-mood">${MOODS[e.mood] || ''} mood ${e.mood}</div>
+        </div>
+      </div>`).join('') +
+      `<div style="text-align:center; padding: 18px 0 10px;">
+        <button class="btn btn-ghost btn-sm" onclick="App.clearHistory()"
+          style="color:var(--muted); font-size:13px;">Clear history</button>
+      </div>`;
+  },
+
+  clearHistory() {
+    if (!confirm('Clear all history?')) return;
+    Store.history = [];
+    Store.saveH();
+    this.renderHistory();
+  },
+
+  // ── Theme ─────────────────────────────────────────────────
+  initTheme() {
+    const saved = localStorage.getItem('rr_theme');
+    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+    const dark = saved ? saved === 'dark' : prefersDark;
+    if (dark) { document.body.classList.add('dark'); $i('theme-icon').textContent = '☀️'; }
+  },
+
+  toggleTheme() {
+    const isDark = document.body.classList.toggle('dark');
+    $i('theme-icon').textContent = isDark ? '☀️' : '🌙';
+    localStorage.setItem('rr_theme', isDark ? 'dark' : 'light');
+    vibrate(8);
+  },
+
+  // ── Duplicate routine ─────────────────────────────────────
+  duplicateRoutine(id) {
+    const src = Store.routines.find(r => r.id === id);
+    if (!src) return;
+    const copy = {
+      ...src,
+      id:    uid(),
+      name:  src.name + ' (copy)',
+      steps: src.steps.map(s => ({ ...s, id: uid() }))
+    };
+    Store.routines.push(copy);
+    Store.saveR();
+    this.renderHome();
+    this.toast('Routine duplicated');
+    vibrate(8);
+  },
+
+  // ── Swipe gestures ────────────────────────────────────────
+  initSwipe() {
+    let sx = 0, sy = 0;
+    const el = $i('view-run');
+
+    el.addEventListener('touchstart', e => {
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+    }, { passive: true });
+
+    el.addEventListener('touchmove', e => {
+      if (!this.run || this.run._done || this.run._paused) return;
+      if ($i('run-done').style.display !== 'none') return;
+      const dx = e.touches[0].clientX - sx;
+      const dy = e.touches[0].clientY - sy;
+      if (Math.abs(dy) > Math.abs(dx) * 0.8 || Math.abs(dx) < 20) return;
+
+      const c = $i('run-step-content');
+      c.style.transition = 'none';
+      const clamped = Math.max(-90, Math.min(90, dx));
+      c.style.transform  = `translateX(${clamped * 0.4}px)`;
+      c.style.opacity    = String(1 - Math.abs(clamped) / 160);
+
+      $i('swipe-left-arr').style.opacity  = dx < -20 ? String(Math.min(1, (-dx - 20) / 60)) : '0';
+      $i('swipe-right-arr').style.opacity = dx >  20 ? String(Math.min(1, ( dx - 20) / 60)) : '0';
+    }, { passive: true });
+
+    el.addEventListener('touchend', e => {
+      $i('swipe-left-arr').style.opacity  = '0';
+      $i('swipe-right-arr').style.opacity = '0';
+      const c = $i('run-step-content');
+      c.style.transition = 'transform .25s ease, opacity .25s ease';
+      c.style.transform  = 'translateX(0)';
+      c.style.opacity    = '1';
+
+      if (!this.run || this.run._done || this.run._paused) return;
+      if ($i('run-done').style.display !== 'none') return;
+
+      const dx = e.changedTouches[0].clientX - sx;
+      const dy = e.changedTouches[0].clientY - sy;
+      if (Math.abs(dy) > Math.abs(dx) * 0.8 || Math.abs(dx) < 72) return;
+
+      if (dx > 0) this.doneStep();
+      else        this.skipStep();
+    }, { passive: true });
+  },
+
+  // ── Keyboard shortcuts ────────────────────────────────────
+  initKeyboard() {
+    document.addEventListener('keydown', e => {
+      if (this.curView !== 'run' || !this.run || this.run._done) return;
+      // Don't fire if a textarea / input is focused
+      if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+      if (e.key === ' ' || e.key === 'p') { e.preventDefault(); this.togglePause(); }
+      if (e.key === 'd' || e.key === 'Enter') { e.preventDefault(); this.doneStep(); }
+      if (e.key === 's') { e.preventDefault(); this.skipStep(); }
+      if (e.key === 'Escape') { e.preventDefault(); this.confirmEnd(); }
+    });
+  },
+
+  // ── Toast ─────────────────────────────────────────────────
+  toast(msg) {
+    const t = $i('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(this._toastTmr);
+    this._toastTmr = setTimeout(() => t.classList.remove('show'), 2700);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
+Store.load();
+App.initTheme();
+App.initSwipe();
+App.initKeyboard();
+App.initCardTilt();
+initSound();
+App.showView('home');
+</script>
+</body>
+</html>
