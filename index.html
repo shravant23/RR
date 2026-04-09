@@ -1842,7 +1842,7 @@ const App = {
   // ── Idle activity monitor ──────────────────────────────────
   _idleTimer: null,
   _idleNudged: false,
-  _IDLE_MS: 2 * 60 * 1000, // 2 minutes
+  _IDLE_MS: 10 * 60 * 1000, // 10 minutes
 
   startIdleWatch() {
     this._idleNudged = false;
