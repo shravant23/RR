@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>Focus Mode</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@600;700&family=Playfair+Display:wght@700&family=DM+Serif+Display&family=Fraunces:wght@700&family=Bodoni+Moda:wght@700&family=Spectral:wght@600;700&family=Cinzel:wght@700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -2297,6 +2297,22 @@ const App = {
 // ═══════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════
+// ── Random title font on every load ──────────────────────────
+const TITLE_FONTS = [
+  'Cormorant Garamond',
+  'Playfair Display',
+  'DM Serif Display',
+  'Fraunces',
+  'Bodoni Moda',
+  'Spectral',
+  'Cinzel',
+];
+(function() {
+  const font = TITLE_FONTS[Math.floor(Math.random() * TITLE_FONTS.length)];
+  const el = document.querySelector('#view-home .page-title');
+  if (el) el.style.fontFamily = `'${font}', Georgia, serif`;
+})();
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');
 }
