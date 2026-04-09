@@ -530,12 +530,27 @@
     .quote-author { font-size: 12px; color: var(--muted); font-weight: 600;
       margin-top: 8px; text-transform: uppercase; letter-spacing: .8px; }
 
-    /* ── Today's pick badge ── */
-    .todays-pick-badge { display: inline-flex; align-items: center; gap: 5px;
-      background: linear-gradient(90deg, #F5A623, #F5C842);
-      color: #7A4800; font-size: 11px; font-weight: 800;
-      padding: 3px 10px; border-radius: 20px; text-transform: uppercase;
-      letter-spacing: .6px; margin-bottom: 8px; }
+    /* ── Break buttons ── */
+    .break-btns { display: flex; gap: 8px; margin-top: 10px; }
+    .break-btn { flex: 1; padding: 9px 0; border-radius: 50px; border: 1.5px solid var(--border);
+      background: rgba(194,220,250,.3); color: var(--muted); font-family: inherit;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .18s; }
+    .break-btn:hover { background: var(--accent-lt); color: var(--accent); border-color: var(--accent); }
+
+    /* Break countdown overlay */
+    #break-overlay { position: absolute; inset: 0; background: rgba(7,27,46,.93);
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px); z-index: 11; gap: 12px; }
+    #break-overlay.show { display: flex; }
+    .break-label { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.6);
+      text-transform: uppercase; letter-spacing: 1.5px; }
+    .break-timer-num { font-size: 64px; font-weight: 200; color: #fff; letter-spacing: -3px;
+      font-variant-numeric: tabular-nums; }
+    .break-end-btn { margin-top: 8px; padding: 11px 28px; border-radius: 50px;
+      background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.2);
+      color: #fff; font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background .18s; }
+    .break-end-btn:hover { background: rgba(255,255,255,.22); }
 
     /* ── Routine progress ring ── */
     .card-ring { position: absolute; top: 18px; right: 60px;
@@ -774,6 +789,18 @@
         </svg>
         Reset step
       </button>
+      <div class="break-btns">
+        <button class="break-btn" onclick="App.startBreak(5)">☕ Short break (5 min)</button>
+        <button class="break-btn" onclick="App.startBreak(15)">🛋️ Long break (15 min)</button>
+      </div>
+    </div>
+
+    <!-- Break overlay -->
+    <div id="break-overlay">
+      <div class="break-label">Break time</div>
+      <div class="break-timer-num" id="break-timer-num">5:00</div>
+      <div class="break-label" id="break-type-label"></div>
+      <button class="break-end-btn" onclick="App.endBreak()">End break early</button>
     </div>
 
     <!-- Paused overlay -->
@@ -1178,26 +1205,6 @@ function progressRingHTML(pct) {
 // ═══════════════════════════════════════════════════════════
 // TODAY'S PICK
 // ═══════════════════════════════════════════════════════════
-function getTodaysPick(routines, history) {
-  if (!routines.length) return null;
-  const h = new Date().getHours();
-  // Morning pick: prefer routines with "morning" in name
-  // Evening pick: prefer routines with "wind","evening","night" in name
-  const morning = /morning|wake|rise|am/i;
-  const evening = /wind|evening|night|sleep|bed|pm/i;
-  let scored = routines.map(r => {
-    const lastRun = history.find(e => e.routineId === r.id);
-    const daysSince = lastRun
-      ? (Date.now() - new Date(lastRun.date)) / 86400000
-      : 999;
-    let score = daysSince * 10; // more days = higher priority
-    if (h >= 5  && h < 12 && morning.test(r.name)) score += 50;
-    if (h >= 17 && h < 23 && evening.test(r.name)) score += 50;
-    return { id: r.id, score };
-  });
-  scored.sort((a, b) => b.score - a.score);
-  return scored[0].id;
-}
 
 // ═══════════════════════════════════════════════════════════
 // ADAPTATION ENGINE
@@ -1360,7 +1367,6 @@ const App = {
       return;
     }
 
-    const pickId = getTodaysPick(routines, Store.history);
     const CARD_PALETTES = [
       ['#1A72D8','#00C2FF'], ['#7C3AED','#C084FC'], ['#059669','#34D399'],
       ['#DC2626','#F87171'], ['#D97706','#FCD34D'], ['#0891B2','#67E8F9'],
@@ -1378,14 +1384,12 @@ const App = {
         : '✨ Fresh start waiting';
       const avgPct  = routineAvgPct(r.id);
       const ring    = progressRingHTML(avgPct);
-      const isPick  = r.id === pickId;
       const [c1, c2] = CARD_PALETTES[i % CARD_PALETTES.length];
       return `
         <div class="routine-card anim" style="animation-delay:${i * .06}s;--card-c1:${c1};--card-c2:${c2}">
           ${ring}
           <div class="card-top">
             <div>
-              ${isPick ? `<div class="todays-pick-badge">⭐ Today's pick</div>` : ''}
               <div class="card-name">${esc(r.name)}</div>
               <div class="card-meta">${r.steps.length} steps · ${totalMin} min · ${optCnt} optional</div>
               <div class="card-last-run">${lastRun}</div>
@@ -1914,6 +1918,45 @@ const App = {
   dismissIdle() {
     $i('idle-nudge').classList.remove('show');
     this._idleNudged = false;
+  },
+
+  // ── Breaks ────────────────────────────────────────────────
+  _breakTimer: null,
+
+  startBreak(mins) {
+    if (!this.run || this.run._done) return;
+    // Pause the step timer
+    if (!this.run._paused) this.togglePause();
+    // Suspend idle watch during break
+    clearTimeout(this._idleTimer);
+    this.dismissIdle();
+
+    let secs = mins * 60;
+    const label = mins <= 5 ? '☕ Short break' : '🛋️ Long break';
+    $i('break-type-label').textContent = label;
+    const fmt = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+    $i('break-timer-num').textContent = fmt(secs);
+    $i('break-overlay').classList.add('show');
+    vibrate(10);
+
+    this._breakTimer = setInterval(() => {
+      secs--;
+      $i('break-timer-num').textContent = fmt(secs);
+      if (secs <= 0) {
+        this.endBreak();
+        playChime('done', 'low');
+        vibrate([10,60,10]);
+      }
+    }, 1000);
+  },
+
+  endBreak() {
+    clearInterval(this._breakTimer);
+    $i('break-overlay').classList.remove('show');
+    // Resume step timer (unpause)
+    if (this.run && this.run._paused) this.togglePause();
+    // Restart idle watch
+    if (this._idleReset) this._idleReset();
   },
 
   // ── History ──────────────────────────────────────────────
