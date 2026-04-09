@@ -122,7 +122,7 @@
       border: 1px solid rgba(194,220,250,.6);
       position: relative; overflow: hidden; }
     .routine-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0;
-      height: 3px; background: linear-gradient(90deg, var(--card-c1, var(--accent)), var(--card-c2, var(--accent2))); }
+      height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
     .routine-card:hover { transform: translateY(-4px) rotate(-0.4deg);
       box-shadow: var(--sh), 0 0 0 1px rgba(26,114,216,.08); }
 
@@ -1386,12 +1386,6 @@ const App = {
       return;
     }
 
-    const CARD_PALETTES = [
-      ['#1A72D8','#00C2FF'], ['#7C3AED','#C084FC'], ['#059669','#34D399'],
-      ['#DC2626','#F87171'], ['#D97706','#FCD34D'], ['#0891B2','#67E8F9'],
-      ['#BE185D','#F472B6'], ['#065F46','#6EE7B7'],
-    ];
-
     list.innerHTML = routines.map((r, i) => {
       const totalMin  = r.steps.reduce((a, s) => a + s.duration, 0);
       const optCnt    = r.steps.filter(s => s.optional).length;
@@ -1403,9 +1397,8 @@ const App = {
         : '✨ Fresh start waiting';
       const avgPct  = routineAvgPct(r.id);
       const ring    = progressRingHTML(avgPct);
-      const [c1, c2] = CARD_PALETTES[i % CARD_PALETTES.length];
       return `
-        <div class="routine-card anim" style="animation-delay:${i * .06}s;--card-c1:${c1};--card-c2:${c2}">
+        <div class="routine-card anim" style="animation-delay:${i * .06}s">
           <div class="card-top">
             <div>
               <div class="card-name">${esc(r.name)}</div>
