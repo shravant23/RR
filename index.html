@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>Focus Mode</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -77,8 +77,16 @@
       text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
     .page-title { font-size: 34px; font-weight: 800; letter-spacing: -1px; line-height: 1.08;
       color: var(--text); }
-    #view-home .page-title { font-family: 'Syne', sans-serif; font-size: 38px; font-weight: 800;
-      color: var(--text); letter-spacing: -1.5px; }
+    @keyframes titleFocusIn {
+      0%   { filter: blur(14px); opacity: 0; transform: translateY(6px); letter-spacing: 6px; }
+      100% { filter: blur(0);    opacity: 1; transform: translateY(0);   letter-spacing: -.5px; }
+    }
+    #view-home .page-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 48px; font-weight: 700; letter-spacing: -.5px;
+      color: var(--text); line-height: 1;
+      animation: titleFocusIn .9s cubic-bezier(.22,1,.36,1) both;
+    }
     .page-sub { font-size: 15px; color: var(--muted); margin-top: 7px; font-weight: 400; }
 
     /* ── Buttons ── */
