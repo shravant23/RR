@@ -1480,8 +1480,11 @@ const App = {
       </div>
       <div class="step-row">
         <input class="sinput s-name" type="text" placeholder="Step name" value="${data ? esc(data.name) : ''}">
-        <input class="sinput s-dur"  type="number" placeholder="min" min="1" max="240"
-          value="${data ? data.duration : 5}" style="text-align:center;">
+        <div style="display:flex;align-items:center;gap:5px;">
+          <input class="sinput s-dur" type="number" placeholder="5" min="1" max="240"
+            value="${data ? data.duration : 5}" style="text-align:center;width:60px;">
+          <span style="font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;">min</span>
+        </div>
       </div>
       <div class="step-foot">
         <label class="tog-wrap">
@@ -1498,11 +1501,14 @@ const App = {
           </div>
           <span>Timed</span>
         </label>
-        <select class="esel s-energy">
-          <option value="low"    ${!data || data.energy === 'low'    ? 'selected' : ''}>⚡ Low</option>
-          <option value="medium" ${data && data.energy === 'medium'  ? 'selected' : ''}>⚡⚡ Medium</option>
-          <option value="high"   ${data && data.energy === 'high'    ? 'selected' : ''}>⚡⚡⚡ High</option>
-        </select>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <select class="esel s-energy">
+            <option value="low"    ${!data || data.energy === 'low'    ? 'selected' : ''}>⚡ Low</option>
+            <option value="medium" ${data && data.energy === 'medium'  ? 'selected' : ''}>⚡⚡ Medium</option>
+            <option value="high"   ${data && data.energy === 'high'    ? 'selected' : ''}>⚡⚡⚡ High</option>
+          </select>
+          <span style="font-size:10px;color:var(--muted);padding-left:2px;">priority</span>
+        </div>
       </div>`;
     c.appendChild(div);
     this.renumSteps();
