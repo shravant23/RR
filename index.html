@@ -970,6 +970,8 @@ function launchConfetti(pct = 100) {
 // ═══════════════════════════════════════════════════════════
 // STORE
 // ═══════════════════════════════════════════════════════════
+const DEFAULTS_VERSION = '2';
+
 const Store = {
   routines: [],
   history:  [],
@@ -979,7 +981,21 @@ const Store = {
     const h = localStorage.getItem('rr_history');
     this.routines = r ? JSON.parse(r) : this.defaults();
     this.history  = h ? JSON.parse(h) : [];
-    if (!r) this.saveR();
+
+    // Auto-update default routines if version changed
+    const ver = localStorage.getItem('rr_defaults_ver');
+    if (ver !== DEFAULTS_VERSION) {
+      const defs = this.defaults();
+      defs.forEach(def => {
+        const idx = this.routines.findIndex(x => x.id === def.id);
+        if (idx >= 0) this.routines[idx] = def;
+        else this.routines.unshift(def);
+      });
+      localStorage.setItem('rr_defaults_ver', DEFAULTS_VERSION);
+      this.saveR();
+    } else if (!r) {
+      this.saveR();
+    }
   },
   saveR() { localStorage.setItem('rr_routines', JSON.stringify(this.routines)); },
   saveH() { localStorage.setItem('rr_history',  JSON.stringify(this.history));  },
