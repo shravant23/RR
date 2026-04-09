@@ -279,6 +279,24 @@
       transition: all .3s cubic-bezier(.34,1.56,.64,1); white-space: nowrap; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    /* ── Code modal ── */
+    .code-modal-bg { position: fixed; inset: 0; background: rgba(11,37,69,.45);
+      backdrop-filter: blur(4px); z-index: 600; display: flex; align-items: center;
+      justify-content: center; padding: 24px; }
+    .code-modal { background: var(--surface); border-radius: var(--r); padding: 28px 24px;
+      width: 100%; max-width: 420px; box-shadow: var(--sh-lg); }
+    .code-modal h3 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .code-modal p { font-size: .85rem; color: var(--muted); margin-bottom: 14px; }
+    .code-box { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      padding: 12px 14px; font-family: monospace; font-size: .78rem; color: var(--text);
+      word-break: break-all; max-height: 100px; overflow-y: auto; margin-bottom: 14px; user-select: all; }
+    .code-import-area { width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: var(--r-sm); padding: 12px 14px; font-family: monospace; font-size: .78rem;
+      color: var(--text); resize: none; height: 90px; margin-bottom: 14px; outline: none; }
+    .code-import-area:focus { border-color: var(--accent); }
+    .code-modal-btns { display: flex; gap: 10px; }
+    .code-modal-btns button { flex: 1; }
+
     /* ── Empty states ── */
     .empty { text-align: center; padding: 60px 32px; }
     .empty-icon { font-size: 52px; margin-bottom: 14px; }
@@ -595,10 +613,14 @@
       <div class="quote-author" id="quote-author"></div>
     </div>
     <div id="routine-list"></div>
-    <div style="padding: 0 20px;">
+    <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 10px;">
       <button class="btn btn-secondary btn-full" onclick="App.showCreate()">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Create new routine
+      </button>
+      <button class="btn btn-ghost btn-full" onclick="App.showImport()">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import ritual from code
       </button>
     </div>
   </div>
@@ -1843,13 +1865,79 @@ const App = {
   shareRoutine(id) {
     const r = Store.routines.find(x => x.id === id);
     if (!r) return;
-    const payload = btoa(unescape(encodeURIComponent(JSON.stringify({ name: r.name, steps: r.steps }))));
-    const url = `${location.origin}${location.pathname}#ritual=${payload}`;
-    navigator.clipboard.writeText(url).then(() => {
-      this.toast('Share link copied! 🔗');
-    }).catch(() => {
-      prompt('Copy this link:', url);
-    });
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify({ name: r.name, steps: r.steps }))));
+    const bg = document.createElement('div');
+    bg.className = 'code-modal-bg';
+    bg.innerHTML = `
+      <div class="code-modal">
+        <h3>Share "${esc(r.name)}"</h3>
+        <p>Copy this code and send it. The other person pastes it using "Import ritual from code".</p>
+        <div class="code-box" id="share-code-box">${code}</div>
+        <div class="code-modal-btns">
+          <button class="btn btn-primary" onclick="
+            navigator.clipboard.writeText('${code}').then(()=>{
+              this.textContent='Copied!';
+              setTimeout(()=>this.textContent='Copy code',1500);
+            }).catch(()=> select all text in the box);
+          ">Copy code</button>
+          <button class="btn btn-ghost" onclick="this.closest('.code-modal-bg').remove()">Close</button>
+        </div>
+      </div>`;
+    // Fix copy button properly
+    bg.querySelector('.btn-primary').onclick = function() {
+      navigator.clipboard.writeText(code).then(() => {
+        this.textContent = 'Copied!';
+        setTimeout(() => this.textContent = 'Copy code', 1500);
+      }).catch(() => {
+        const box = bg.querySelector('#share-code-box');
+        const sel = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(box);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      });
+    };
+    document.body.appendChild(bg);
+  },
+
+  showImport() {
+    const bg = document.createElement('div');
+    bg.className = 'code-modal-bg';
+    bg.innerHTML = `
+      <div class="code-modal">
+        <h3>Import a ritual</h3>
+        <p>Paste the code you received below.</p>
+        <textarea class="code-import-area" id="import-code-input" placeholder="Paste code here…"></textarea>
+        <div class="code-modal-btns">
+          <button class="btn btn-primary" id="import-confirm-btn">Import</button>
+          <button class="btn btn-ghost" onclick="this.closest('.code-modal-bg').remove()">Cancel</button>
+        </div>
+      </div>`;
+    bg.querySelector('#import-confirm-btn').onclick = () => {
+      const raw = bg.querySelector('#import-code-input').value.trim();
+      if (!raw) return;
+      try {
+        const data = JSON.parse(decodeURIComponent(escape(atob(raw))));
+        if (!data.name || !Array.isArray(data.steps)) throw new Error();
+        const existing = Store.routines.find(r => r.name === data.name);
+        const newR = {
+          id:    uid(),
+          name:  existing ? data.name + ' (imported)' : data.name,
+          steps: data.steps.map(s => ({ ...s, id: uid() }))
+        };
+        Store.routines.push(newR);
+        Store.saveR();
+        this.renderHome();
+        bg.remove();
+        this.toast(`"${newR.name}" imported! 🎉`);
+        vibrate(10);
+      } catch(e) {
+        bg.querySelector('#import-code-input').style.borderColor = 'var(--danger)';
+        bg.querySelector('p').textContent = 'Invalid code — make sure you copied the full thing.';
+        bg.querySelector('p').style.color = 'var(--danger)';
+      }
+    };
+    document.body.appendChild(bg);
   },
 
   duplicateRoutine(id) {
@@ -1949,35 +2037,6 @@ App.initCardTilt();
 initSound();
 App.showView('home');
 
-// ── Import ritual from shared link ──
-(function() {
-  const hash = location.hash;
-  if (!hash.startsWith('#ritual=')) return;
-  try {
-    const json = decodeURIComponent(escape(atob(hash.slice(8))));
-    const data = JSON.parse(json);
-    if (!data.name || !Array.isArray(data.steps)) return;
-    // Clean up URL without reload
-    history.replaceState(null, '', location.pathname);
-    // Ask user
-    setTimeout(() => {
-      const existing = Store.routines.find(r => r.name === data.name);
-      const msg = existing
-        ? `Import "${data.name}"? (You already have one with this name — it will be added as a copy)`
-        : `Someone shared "${data.name}" with you!\n\n${data.steps.length} steps · ${data.steps.reduce((a,s)=>a+s.duration,0)} min total\n\nAdd it to your rituals?`;
-      if (!confirm(msg)) return;
-      const newR = {
-        id:    uid(),
-        name:  existing ? data.name + ' (shared)' : data.name,
-        steps: data.steps.map(s => ({ ...s, id: uid() }))
-      };
-      Store.routines.push(newR);
-      Store.saveR();
-      App.renderHome();
-      App.toast(`"${newR.name}" added! 🎉`);
-    }, 600);
-  } catch(e) { /* bad link, ignore */ }
-})();
 </script>
 </body>
 </html>
