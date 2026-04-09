@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>Focus Mode</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -76,9 +76,9 @@
     .eyebrow { font-size: 12px; font-weight: 700; color: var(--accent);
       text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
     .page-title { font-size: 34px; font-weight: 800; letter-spacing: -1px; line-height: 1.08;
-      background: linear-gradient(120deg, var(--text) 0%, var(--accent) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text; }
+      color: var(--text); }
+    #view-home .page-title { font-family: 'Syne', sans-serif; font-size: 38px; font-weight: 800;
+      color: var(--text); letter-spacing: -1.5px; }
     .page-sub { font-size: 15px; color: var(--muted); margin-top: 7px; font-weight: 400; }
 
     /* ── Buttons ── */
@@ -468,8 +468,7 @@
         radial-gradient(ellipse 80% 40% at -10% 80%, #071E35 0%, transparent 60%),
         #071B2E;
     }
-    body.dark .page-title { background: linear-gradient(120deg, var(--text) 0%, var(--accent) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    body.dark .page-title { color: var(--text); }
     body.dark .run-name    { background: linear-gradient(120deg, var(--text) 0%, var(--accent) 120%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     body.dark .routine-card { border-color: rgba(21,58,90,.8); }
