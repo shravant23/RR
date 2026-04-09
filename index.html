@@ -553,8 +553,7 @@
     .break-end-btn:hover { background: rgba(255,255,255,.22); }
 
     /* ── Routine progress ring ── */
-    .card-ring { position: absolute; top: 18px; right: 60px;
-      display: flex; flex-direction: column; align-items: center; }
+    .card-ring { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
     .ring-pct { font-size: 10px; font-weight: 700; color: var(--accent);
       margin-top: 1px; letter-spacing: -.3px; }
 
@@ -1387,14 +1386,14 @@ const App = {
       const [c1, c2] = CARD_PALETTES[i % CARD_PALETTES.length];
       return `
         <div class="routine-card anim" style="animation-delay:${i * .06}s;--card-c1:${c1};--card-c2:${c2}">
-          ${ring}
           <div class="card-top">
             <div>
               <div class="card-name">${esc(r.name)}</div>
               <div class="card-meta">${r.steps.length} steps · ${totalMin} min · ${optCnt} optional</div>
               <div class="card-last-run">${lastRun}</div>
             </div>
-            <div class="card-top-btns">
+            <div class="card-top-btns" style="align-items:center;">
+              ${ring}
               <button class="icon-btn" title="Share" onclick="App.shareRoutine('${r.id}')">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
