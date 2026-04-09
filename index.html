@@ -982,10 +982,7 @@ const QUOTES = [
 ];
 
 function renderQuote() {
-  const seed = new Date().toDateString(); // changes daily
-  let hash = 0;
-  for (const c of seed) hash = (hash * 31 + c.charCodeAt(0)) & 0xffffffff;
-  const q = QUOTES[Math.abs(hash) % QUOTES.length];
+  const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
   $i('quote-text').textContent   = q.text;
   $i('quote-author').textContent = '— ' + q.author;
 }
