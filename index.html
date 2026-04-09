@@ -655,6 +655,20 @@
       color: #fff; font-size: 12px; font-weight: 600; padding: 5px 12px; cursor: pointer;
       font-family: inherit; transition: background .15s; }
     #idle-nudge button:hover { background: rgba(255,255,255,.3); }
+
+    /* ── Update notification ── */
+    #update-notif { position: fixed; bottom: 100px; left: 16px; z-index: 950;
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      padding: 12px 16px; box-shadow: var(--sh-lg); max-width: 260px;
+      transform: translateX(-110%); transition: transform .4s cubic-bezier(.34,1.2,.64,1);
+      pointer-events: auto; }
+    #update-notif.show { transform: translateX(0); }
+    .update-notif-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .update-notif-body { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .update-notif-key { display: inline-block; background: var(--border); border-radius: 4px;
+      padding: 1px 6px; font-family: monospace; font-size: 11px; color: var(--text); }
+    .update-notif-close { position: absolute; top: 8px; right: 8px; background: none; border: none;
+      cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; padding: 2px 4px; }
   </style>
 </head>
 <body>
@@ -914,6 +928,13 @@
   <!-- ══ TOAST ══════════════════════════════════════════ -->
   <div id="toast"></div>
 
+  <!-- ══ UPDATE NOTIFICATION ══════════════════════════════ -->
+  <div id="update-notif">
+    <button class="update-notif-close" onclick="document.getElementById('update-notif').classList.remove('show')">×</button>
+    <div class="update-notif-title">✨ New update available</div>
+    <div class="update-notif-body">Press <span class="update-notif-key">⌘ Shift R</span> (Mac) or <span class="update-notif-key">Ctrl Shift R</span> (Windows) to get the latest.</div>
+  </div>
+
   <!-- ══ IDLE NUDGE ════════════════════════════════════ -->
   <div id="idle-nudge">
     👋 Still with you? <button onclick="App.dismissIdle()">I'm here</button>
@@ -1040,6 +1061,7 @@ function launchConfetti(pct = 100) {
 // STORE
 // ═══════════════════════════════════════════════════════════
 const DEFAULTS_VERSION = '2';
+const APP_VERSION = '1.1';
 
 const Store = {
   routines: [],
@@ -2311,6 +2333,18 @@ const TITLE_FONTS = [
   const font = TITLE_FONTS[Math.floor(Math.random() * TITLE_FONTS.length)];
   const el = document.querySelector('#view-home .page-title');
   if (el) el.style.fontFamily = `'${font}', Georgia, serif`;
+})();
+
+// ── Version update notification ───────────────────────────
+(function() {
+  const stored = localStorage.getItem('rr_app_ver');
+  if (stored && stored !== APP_VERSION) {
+    setTimeout(() => {
+      $i('update-notif').classList.add('show');
+      setTimeout(() => $i('update-notif').classList.remove('show'), 8000);
+    }, 1200);
+  }
+  localStorage.setItem('rr_app_ver', APP_VERSION);
 })();
 
 if ('serviceWorker' in navigator) {
