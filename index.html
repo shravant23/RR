@@ -2218,6 +2218,10 @@ const App = {
 // ═══════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+
 Store.load();
 App.initTheme();
 App.initSwipe();
