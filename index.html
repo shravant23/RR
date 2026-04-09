@@ -588,6 +588,13 @@
       font-family: inherit; }
     #sound-btn:hover { background: var(--accent-lt); color: var(--accent); }
 
+    #dynamic-theme-btn { position: absolute; top: 20px; right: 18px; background: rgba(194,220,250,.4);
+      border: 1px solid var(--border); border-radius: 50px; padding: 6px 12px;
+      font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted);
+      display: flex; align-items: center; gap: 5px; transition: all .2s; font-family: inherit; }
+    #dynamic-theme-btn:hover { background: var(--accent-lt); color: var(--accent); }
+    #dynamic-theme-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
     /* ── Ambient run glow ── */
     #view-run { transition: background .8s ease, opacity .3s ease; }
 
@@ -644,6 +651,9 @@
       <button id="sound-btn" onclick="App.toggleSound()">
         <span id="sound-icon">🔊</span> Sound
       </button>
+      <button id="dynamic-theme-btn" onclick="App.toggleDynamicTheme()" title="Changes the color theme every time you open the app">
+        🎨 Dynamic Theme
+      </button>
       <div class="eyebrow" id="home-greeting">Good morning</div>
       <div class="page-title">Focus Mode ✦</div>
       <div class="page-sub">Ready to show up for yourself today?</div>
@@ -654,6 +664,11 @@
     <div class="quote-card" id="quote-card">
       <div class="quote-text" id="quote-text"></div>
       <div class="quote-author" id="quote-author"></div>
+    </div>
+    <div id="dynamic-theme-desc" style="display:none; margin: -10px 18px 16px; padding: 10px 16px;
+      background: var(--accent-lt); border-radius: var(--r-sm); font-size: 13px;
+      color: var(--accent-dk); font-weight: 500; line-height: 1.5;">
+      🎨 <strong>Dynamic Theme is ON</strong> — the app picks a fresh color palette every time you open or refresh it. Toggle it off above to lock in the current colors.
     </div>
     <div id="routine-list"></div>
     <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 10px;">
@@ -2041,6 +2056,12 @@ const App = {
     const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
     const dark = saved ? saved === 'dark' : prefersDark;
     if (dark) { document.body.classList.add('dark'); $i('theme-icon').textContent = '☀️'; }
+    // Apply dynamic color theme if enabled
+    if (localStorage.getItem('rr_dynamic_theme') === 'on') {
+      applyRandomTheme();
+      $i('dynamic-theme-btn').classList.add('active');
+      $i('dynamic-theme-desc').style.display = 'block';
+    }
   },
 
   toggleTheme() {
@@ -2048,6 +2069,24 @@ const App = {
     $i('theme-icon').textContent = isDark ? '☀️' : '🌙';
     localStorage.setItem('rr_theme', isDark ? 'dark' : 'light');
     vibrate(8);
+  },
+
+  toggleDynamicTheme() {
+    const on = localStorage.getItem('rr_dynamic_theme') === 'on';
+    const next = !on;
+    localStorage.setItem('rr_dynamic_theme', next ? 'on' : 'off');
+    const btn = $i('dynamic-theme-btn');
+    if (next) {
+      applyRandomTheme();
+      btn.classList.add('active');
+      $i('dynamic-theme-desc').style.display = 'block';
+    } else {
+      resetTheme();
+      btn.classList.remove('active');
+      $i('dynamic-theme-desc').style.display = 'none';
+    }
+    vibrate(8);
+    this.toast(next ? 'Dynamic theme on 🎨' : 'Dynamic theme off');
   },
 
   // ── Duplicate routine ─────────────────────────────────────
@@ -2220,6 +2259,45 @@ const App = {
 // ═══════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');
+}
+
+// ═══════════════════════════════════════════════════════════
+// DYNAMIC THEMES
+// ═══════════════════════════════════════════════════════════
+const COLOR_THEMES = [
+  { name:'Ocean',   bg:'#EDF4FF', accent:'#1A72D8', accent2:'#00C2FF', lt:'#D6ECFF', dk:'#1059B0', border:'#C2DCFA', g1:'#B8DEFF', g2:'#D0EEFF' },
+  { name:'Forest',  bg:'#F0FDF4', accent:'#059669', accent2:'#34D399', lt:'#D1FAE5', dk:'#047857', border:'#A7F3D0', g1:'#BBF7D0', g2:'#D1FAE5' },
+  { name:'Violet',  bg:'#FAF5FF', accent:'#7C3AED', accent2:'#C084FC', lt:'#EDE9FE', dk:'#6D28D9', border:'#DDD6FE', g1:'#E9D5FF', g2:'#EDE9FE' },
+  { name:'Rose',    bg:'#FFF1F2', accent:'#E11D48', accent2:'#FB7185', lt:'#FFE4E6', dk:'#BE123C', border:'#FECDD3', g1:'#FECDD3', g2:'#FFE4E6' },
+  { name:'Amber',   bg:'#FFFBEB', accent:'#D97706', accent2:'#FCD34D', lt:'#FEF3C7', dk:'#B45309', border:'#FDE68A', g1:'#FDE68A', g2:'#FEF3C7' },
+  { name:'Teal',    bg:'#F0FDFF', accent:'#0891B2', accent2:'#67E8F9', lt:'#CFFAFE', dk:'#0E7490', border:'#A5F3FC', g1:'#A5F3FC', g2:'#CFFAFE' },
+  { name:'Indigo',  bg:'#EEF2FF', accent:'#4338CA', accent2:'#818CF8', lt:'#E0E7FF', dk:'#3730A3', border:'#C7D2FE', g1:'#C7D2FE', g2:'#E0E7FF' },
+  { name:'Slate',   bg:'#F8FAFC', accent:'#475569', accent2:'#94A3B8', lt:'#E2E8F0', dk:'#334155', border:'#CBD5E1', g1:'#CBD5E1', g2:'#E2E8F0' },
+];
+
+function applyRandomTheme() {
+  const t = COLOR_THEMES[Math.floor(Math.random() * COLOR_THEMES.length)];
+  const r = document.documentElement.style;
+  r.setProperty('--bg',       t.bg);
+  r.setProperty('--accent',   t.accent);
+  r.setProperty('--accent2',  t.accent2);
+  r.setProperty('--accent-lt',t.lt);
+  r.setProperty('--accent-dk',t.dk);
+  r.setProperty('--border',   t.border);
+  document.body.style.background = `
+    radial-gradient(ellipse 140% 55% at 60% -5%, ${t.g1} 0%, transparent 65%),
+    radial-gradient(ellipse 80% 40% at -10% 80%, ${t.g2} 0%, transparent 60%),
+    ${t.bg}`;
+  // Update text color for dark accents
+  const isDark = ['#475569','#334155'].includes(t.accent);
+  document.documentElement.style.setProperty('--text', isDark ? '#1E293B' : '#0B2545');
+}
+
+function resetTheme() {
+  ['--bg','--accent','--accent2','--accent-lt','--accent-dk','--border','--text'].forEach(v =>
+    document.documentElement.style.removeProperty(v)
+  );
+  document.body.style.background = '';
 }
 
 Store.load();
