@@ -1500,13 +1500,13 @@ const App = {
           </div>
           <span>Timed</span>
         </label>
-        <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="display:flex;align-items:center;gap:6px;">
           <select class="esel s-energy">
             <option value="low"    ${!data || data.energy === 'low'    ? 'selected' : ''}>⚡ Low</option>
             <option value="medium" ${data && data.energy === 'medium'  ? 'selected' : ''}>⚡⚡ Medium</option>
             <option value="high"   ${data && data.energy === 'high'    ? 'selected' : ''}>⚡⚡⚡ High</option>
           </select>
-          <span style="font-size:10px;color:var(--muted);padding-left:2px;">priority</span>
+          <span style="font-size:13px;color:var(--muted);font-weight:600;">Priority</span>
         </div>
       </div>`;
     c.appendChild(div);
