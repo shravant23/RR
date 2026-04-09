@@ -989,23 +989,18 @@ const Store = {
       {
         id: 'rr-morning', name: 'Morning Ritual',
         steps: [
-          { id: 'm1', name: 'Drink a glass of water',  duration: 1,  optional: false, energy: 'low'    },
-          { id: 'm2', name: 'Light stretching',         duration: 5,  optional: true,  energy: 'low'    },
-          { id: 'm3', name: 'Morning journaling',       duration: 10, optional: true,  energy: 'medium' },
-          { id: 'm4', name: 'Cold shower',              duration: 5,  optional: true,  energy: 'high'   },
-          { id: 'm5', name: 'Breathe & meditate',       duration: 5,  optional: false, energy: 'low'    },
-          { id: 'm6', name: 'Plan the day',             duration: 5,  optional: false, energy: 'medium' },
+          { id: 'm1', name: 'Plan the day',      duration: 5,  optional: false, energy: 'medium' },
+          { id: 'm2', name: 'Stretch',            duration: 10, optional: false, energy: 'low'    },
+          { id: 'm3', name: 'Meditate',           duration: 5,  optional: false, energy: 'low'    },
         ]
       },
       {
         id: 'rr-evening', name: 'Wind Down',
         steps: [
-          { id: 'e1', name: 'Put phone away',   duration: 1,  optional: false, energy: 'low' },
-          { id: 'e2', name: 'Herbal tea',       duration: 3,  optional: true,  energy: 'low' },
-          { id: 'e3', name: 'Light reading',    duration: 15, optional: true,  energy: 'low' },
-          { id: 'e4', name: 'Gratitude list',   duration: 5,  optional: true,  energy: 'low' },
-          { id: 'e5', name: 'Dim the lights',   duration: 1,  optional: false, energy: 'low' },
-          { id: 'e6', name: 'Deep breathing',   duration: 3,  optional: false, energy: 'low' },
+          { id: 'e1', name: 'Put phone away',     duration: 0,  optional: false, energy: 'low', timed: false },
+          { id: 'e2', name: 'Clean your area',    duration: 5,  optional: false, energy: 'low'    },
+          { id: 'e3', name: 'Journal — what went well and what didn\'t', duration: 5, optional: false, energy: 'low' },
+          { id: 'e4', name: 'Read',               duration: 20, optional: false, energy: 'low'    },
         ]
       }
     ];
@@ -1476,6 +1471,13 @@ const App = {
           </div>
           <span>Optional</span>
         </label>
+        <label class="tog-wrap">
+          <div class="tog">
+            <input type="checkbox" class="s-timed" ${data && data.timed === false ? '' : 'checked'}>
+            <div class="tog-thumb"></div>
+          </div>
+          <span>Timed</span>
+        </label>
         <select class="esel s-energy">
           <option value="low"    ${!data || data.energy === 'low'    ? 'selected' : ''}>⚡ Low</option>
           <option value="medium" ${data && data.energy === 'medium'  ? 'selected' : ''}>⚡⚡ Medium</option>
@@ -1522,12 +1524,14 @@ const App = {
     eds.forEach((el, i) => {
       const nm = el.querySelector('.s-name').value.trim();
       if (!nm) { this.toast(`Step ${i+1} needs a name`); valid = false; return; }
+      const isTimed = el.querySelector('.s-timed').checked;
       steps.push({
         id:       uid(),
         name:     nm,
-        duration: Math.max(1, parseInt(el.querySelector('.s-dur').value) || 1),
+        duration: isTimed ? Math.max(1, parseInt(el.querySelector('.s-dur').value) || 1) : 0,
         optional: el.querySelector('.s-opt').checked,
-        energy:   el.querySelector('.s-energy').value
+        energy:   el.querySelector('.s-energy').value,
+        ...(isTimed ? {} : { timed: false })
       });
     });
     if (!valid) return;
@@ -1629,20 +1633,35 @@ const App = {
     else if (step.optional) bw.innerHTML = `<span class="run-badge opt">optional</span>`;
     else                    bw.innerHTML = '';
 
-    // Timer
+    // Timer — hide entirely for untimed steps
     clearInterval(this.run.timer);
-    this.run.timeLeft = step.duration * 60;
-    this.run.stepDur  = step.duration * 60;
-    this.updateTimer();
+    const timerWrap = document.querySelector('.timer-wrap');
+    const resetBtn  = document.querySelector('.btn-reset');
+    const pauseBtn  = $i('run-pause-btn');
 
-    this.run.timer = setInterval(() => {
-      this.run.timeLeft--;
+    if (step.timed === false) {
+      timerWrap.style.display = 'none';
+      resetBtn.style.display  = 'none';
+      pauseBtn.style.display  = 'none';
+      this.run.timeLeft = 0;
+      this.run.stepDur  = 0;
+    } else {
+      timerWrap.style.display = '';
+      resetBtn.style.display  = '';
+      pauseBtn.style.display  = '';
+      this.run.timeLeft = step.duration * 60;
+      this.run.stepDur  = step.duration * 60;
       this.updateTimer();
-      if (this.run.timeLeft <= 0) {
-        clearInterval(this.run.timer);
-        setTimeout(() => { if (this.run && !this.run._done) this.doneStep(); }, 700);
-      }
-    }, 1000);
+
+      this.run.timer = setInterval(() => {
+        this.run.timeLeft--;
+        this.updateTimer();
+        if (this.run.timeLeft <= 0) {
+          clearInterval(this.run.timer);
+          setTimeout(() => { if (this.run && !this.run._done) this.doneStep(); }, 700);
+        }
+      }, 1000);
+    }
   },
 
   updateTimer() {
